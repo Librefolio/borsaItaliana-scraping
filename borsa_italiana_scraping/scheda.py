@@ -89,13 +89,20 @@ def _parsa_percentuale(testo: str, lingua: str = "en") -> Decimal | None:
 # ------------------------------------------------------------------
 
 
-def _trova_valore(soup: BeautifulSoup, etichette: list[str]) -> str | None:
+def _trova_valore(soup: BeautifulSoup, etichette: list[str], esatta: bool = False) -> str | None:
     """Cerca coppie chiave-valore nella pagina.
 
     Le pagine di Borsa Italiana usano layout con label in <span>/<strong>
     seguite dal valore nella cella/div successiva.
+
+    Con ``esatta=True`` l'etichetta deve coincidere con il testo della cella: un'etichetta
+    generica come «Valuta» non deve prendere «Valuta di Denominazione».
     """
     testo_pagina = soup.get_text(" ", strip=True).lower()
+
+    def corrisponde(testo: str) -> bool:
+        testo = testo.lower()
+        return testo == etichetta_lower if esatta else (testo == etichetta_lower or etichetta_lower in testo)
 
     for etichetta in etichette:
         etichetta_lower = etichetta.lower()
@@ -105,7 +112,7 @@ def _trova_valore(soup: BeautifulSoup, etichette: list[str]) -> str | None:
         # Strategia 1: cerco <span>/<strong> con il testo dell'etichetta
         for tag in soup.find_all(["span", "strong", "td", "th"]):
             tag_text = _pulisci_testo(tag.get_text())
-            if tag_text.lower() == etichetta_lower or etichetta_lower in tag_text.lower():
+            if corrisponde(tag_text):
                 # Il valore è nel sibling successivo o nel parent → sibling
                 sibling = tag.find_next_sibling()
                 if sibling:
@@ -134,7 +141,7 @@ def _trova_valore(soup: BeautifulSoup, etichette: list[str]) -> str | None:
                 if parent_tr:
                     tds = parent_tr.find_all("td")
                     for i, td in enumerate(tds):
-                        if etichetta_lower in _pulisci_testo(td.get_text()).lower():
+                        if corrisponde(_pulisci_testo(td.get_text())):
                             if i + 1 < len(tds):
                                 val = _pulisci_testo(tds[i + 1].get_text())
                                 if val and val != "-":
@@ -246,6 +253,12 @@ def _estrai_valuta(soup: BeautifulSoup, lingua: str) -> tuple[str, str | None]:
     Il campo "Negotiation Currency/ Settlement currency" ha formato
     ``EUR/EUR`` o ``USD/EUR``. Restituisce (negoziazione, liquidazione).
     Se il campo ha un solo valore, liquidazione è None.
+
+    La valuta di *denominazione* («Valuta di Denominazione» / «Currency Denomination»,
+    sulle schede ETF/ETC) non è la valuta di negoziazione: un ETC denominato in USD si
+    negozia in EUR su Borsa Italiana. Per questo l'etichetta generica «Valuta» vale solo
+    se coincide esattamente con la cella; la denominazione si legge a parte, con
+    :func:`_estrai_valuta_denominazione`. Senza righe di negoziazione resta il default EUR.
     """
     etichette = [
         "Negotiation Currency",
@@ -255,9 +268,8 @@ def _estrai_valuta(soup: BeautifulSoup, lingua: str) -> tuple[str, str | None]:
         "Trading Currency",
         "Settlement Currency",
         "Valuta di Liquidazione",
-        "Valuta",
     ]
-    val = _trova_valore(soup, etichette)
+    val = _trova_valore(soup, etichette) or _trova_valore(soup, ["Valuta", "Currency"], esatta=True)
     if val:
         val = val.strip().upper()
         # Formato "EUR/EUR" → negoziazione/liquidazione
@@ -269,6 +281,16 @@ def _estrai_valuta(soup: BeautifulSoup, lingua: str) -> tuple[str, str | None]:
         if len(val) == 3 and val.isalpha():
             return val, None
     return "EUR", None
+
+
+def _estrai_valuta_denominazione(soup: BeautifulSoup) -> str | None:
+    """Estrae la valuta di denominazione (schede ETF/ETC), se la pagina la riporta."""
+    val = _trova_valore(soup, ["Valuta di Denominazione", "Currency Denomination", "Denomination Currency"])
+    if val:
+        val = val.strip().upper()
+        if len(val) == 3 and val.isalpha():
+            return val
+    return None
 
 
 # ------------------------------------------------------------------
@@ -415,6 +437,7 @@ def ottieni_scheda(
             descrizione=descrizione,
             url_pagina=url_finale or None,
             valuta_liquidazione=valuta_liq,
+            valuta_denominazione=_estrai_valuta_denominazione(soup),
             apertura=apertura,
             minimo_giorno=minimo_giorno,
             massimo_giorno=massimo_giorno,

@@ -121,3 +121,18 @@ class TestSchedaAzione:
         assert scheda.performance_1m is not None
         assert scheda.performance_6m is not None
         assert scheda.performance_1y is not None
+
+
+ISIN_ETC_ORO = "IE00B579F325"  # Invesco Physical Gold ETC: denominazione USD, negoziazione EUR
+
+
+@pytest.mark.integration
+class TestSchedaValutaDenominazione:
+    """La valuta di denominazione di un ETC non diventa la valuta di negoziazione."""
+
+    @pytest.mark.parametrize("lingua", ["it", "en"])
+    def test_etc_oro_negoziato_in_eur(self, sessione: Sessione, lingua: str) -> None:
+        scheda = ottieni_scheda(ISIN_ETC_ORO, lingua=lingua, sessione=sessione)
+
+        assert scheda.valuta == "EUR"
+        assert scheda.valuta_denominazione == "USD"

@@ -108,6 +108,7 @@ class SchedaStrumento:
     descrizione: str | None = None            # meta description della pagina
     url_pagina: str | None = None             # URL canonico della scheda
     valuta_liquidazione: str | None = None     # Settlement currency (se diversa)
+    valuta_denominazione: str | None = None    # Valuta di denominazione (ETF/ETC); non è la valuta di negoziazione
     minimo_anno: Decimal | None = None         # Year Low
     massimo_anno: Decimal | None = None        # Year High
     apertura: Decimal | None = None            # Opening price
