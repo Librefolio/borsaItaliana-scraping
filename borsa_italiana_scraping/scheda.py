@@ -657,18 +657,18 @@ def _arricchisci_obbligazione(
     )
     scheda.cedola_periodale = _parsa_percentuale(val, lingua) if val else None
 
-    # Scadenza
-    val = _trova_valore(
-        soup,
-        [
-            "Maturity Date",
-            "Scadenza",
-            "Maturity",
-            "Data Scadenza",
-            "Expiry Date",
-            "Data Scadenza",
-        ],
-    )
+    # Scadenza. Exact match first: as substrings, "Scadenza" and "Maturity" also
+    # match the yield rows ("Rendimento effettivo a scadenza lordo",
+    # "Gross yield to maturity"), which come earlier in the scheda page.
+    etichette_scadenza = [
+        "Maturity Date",
+        "Scadenza",
+        "Maturity",
+        "Data Scadenza",
+        "Expiry Date",
+        "Data Scadenza",
+    ]
+    val = _trova_valore(soup, etichette_scadenza, esatta=True) or _trova_valore(soup, etichette_scadenza)
     scheda.scadenza = _parsa_data_scheda(val, lingua) if val else None
 
     # Emittente
@@ -793,6 +793,7 @@ def _arricchisci_obbligazione(
         [
             "Reference price date",
             "Data Prezzo di Riferimento",
+            "Data di riferimento",
             "Reference Price Date",
         ],
     )
@@ -805,6 +806,7 @@ def _arricchisci_obbligazione(
             "First Day of Trading",
             "Primo Giorno di Negoziazione",
             "Prima Data di Negoziazione",
+            "Data Inizio Negoziazione",
         ],
     )
     scheda.data_primo_giorno = _parsa_data_scheda(val, lingua) if val else None
