@@ -94,124 +94,172 @@ def _estrai_mic_da_link(cella: BeautifulSoup) -> str:
 def lista_btp(
     lingua: str = "en",
     sessione: Sessione | None = None,
+    max_pages: int = 50,
 ) -> list[StrumentoLista]:
-    """Ottiene la lista completa dei BTP quotati sul MOT.
+    """Ottiene i BTP quotati sul MOT, scorrendo le pagine disponibili."""
 
-    Esegue lo scraping della pagina HTML con la tabella di tutti i BTP.
-
-    Args:
-        lingua: ``"en"`` o ``"it"``.
-        sessione: sessione HTTP riutilizzabile.
-
-    Returns:
-        Lista di ``StrumentoLista``, uno per ogni BTP.
-    """
     lingua = lingua.lower()
     sessione_locale = sessione is None
+
     if sessione_locale:
         sessione = Sessione()
 
     try:
-        soup = sessione.get_html(_URL_LISTA_BTP, params={"lang": lingua})
-
-        # Cerca la tabella principale
-        tabella = soup.find("table")
-        if not tabella:
-            raise DatiNonDisponibili("Tabella BTP non trovata nella pagina")
-
-        righe = tabella.find_all("tr")
-        if len(righe) < 2:
-            raise DatiNonDisponibili("La tabella BTP è vuota")
-
         risultati: list[StrumentoLista] = []
+        isins_trovati: set[str] = set()
 
-        # Identifica la riga header (la prima con <th>)
-        header = None
-        header_idx = 0
-        for i, riga in enumerate(righe):
-            if riga.find("th"):
-                header = riga
-                header_idx = i
+        for pagina in range(1, max_pages + 1):
+
+            soup = sessione.get_html(
+                _URL_LISTA_BTP,
+                params={
+                    "lang": lingua,
+                    "page": pagina,
+                },
+            )
+
+            tabella = soup.find("table")
+
+            if not tabella:
+                if pagina == 1:
+                    raise DatiNonDisponibili(
+                        "Tabella BTP non trovata nella pagina"
+                    )
                 break
 
-        intestazioni: list[str] = []
-        if header:
-            intestazioni = [_pulisci(th.get_text()).lower() for th in header.find_all("th")]
+            righe = tabella.find_all("tr")
 
-        # Mappa colonne (flessibile per EN e IT)
-        idx_nome: int | None = None
-        idx_isin: int | None = None
-        idx_prezzo: int | None = None
-        idx_cedola: int | None = None
-        idx_scadenza: int | None = None
+            if len(righe) < 2:
+                break
 
-        for i, h in enumerate(intestazioni):
-            if any(k in h for k in ("name", "nome", "title", "titolo", "description", "descrizione")):
-                idx_nome = i
-            elif "isin" in h or "code" in h or "codice" in h:
-                idx_isin = i
-            elif "last" in h or "ultimo" in h or "price" in h or "prezzo" in h:
-                idx_prezzo = i
-            elif "coupon" in h or "cedola" in h:
-                idx_cedola = i
-            elif "expiry" in h or "scadenza" in h or "maturity" in h:
-                idx_scadenza = i
+            # Individua l'header
+            header = None
+            header_idx = 0
 
-        for riga in righe[header_idx + 1:]:
-            celle = riga.find_all("td")
-            if not celle:
-                continue
+            for i, riga in enumerate(righe):
+                if riga.find("th"):
+                    header = riga
+                    header_idx = i
+                    break
 
-            # ISIN: prova dalla colonna dedicata, oppure dal primo link
-            isin: str | None = None
-            if idx_isin is not None and idx_isin < len(celle):
-                isin = _estrai_isin_da_link(celle[idx_isin])
-            if not isin:
-                # Prova dal primo link nella riga
-                isin = _estrai_isin_da_link(riga)
-            if not isin:
-                continue
+            intestazioni = []
 
-            # MIC dal link
-            mic = _estrai_mic_da_link(riga)
+            if header:
+                intestazioni = [
+                    _pulisci(th.get_text()).lower()
+                    for th in header.find_all("th")
+                ]
 
-            # Nome
-            nome = ""
-            if idx_nome is not None and idx_nome < len(celle):
-                nome = _pulisci(celle[idx_nome].get_text())
-            if not nome:
-                # Prova il testo del primo link
-                link = riga.find("a")
-                if link:
-                    nome = _pulisci(link.get_text())
+            # Mappa delle colonne
+            idx_nome = None
+            idx_isin = None
+            idx_prezzo = None
+            idx_cedola = None
+            idx_scadenza = None
+
+            for i, h in enumerate(intestazioni):
+                if any(k in h for k in (
+                    "name", "nome", "title", "titolo",
+                    "description", "descrizione"
+                )):
+                    idx_nome = i
+
+                elif "isin" in h or "code" in h or "codice" in h:
+                    idx_isin = i
+
+                elif any(k in h for k in (
+                    "last", "ultimo", "price", "prezzo"
+                )):
+                    idx_prezzo = i
+
+                elif "coupon" in h or "cedola" in h:
+                    idx_cedola = i
+
+                elif any(k in h for k in (
+                    "expiry", "scadenza", "maturity"
+                )):
+                    idx_scadenza = i
+
+            nuovi = 0
+
+            for riga in righe[header_idx + 1:]:
+                celle = riga.find_all("td")
+
+                if not celle:
+                    continue
+
+                # ISIN
+                isin = None
+
+                if idx_isin is not None and idx_isin < len(celle):
+                    isin = _estrai_isin_da_link(celle[idx_isin])
+
+                if not isin:
+                    isin = _estrai_isin_da_link(riga)
+
+                if not isin:
+                    continue
+
+                # Evita duplicati tra pagine
+                if isin in isins_trovati:
+                    continue
+
+                isins_trovati.add(isin)
+
+                # MIC
+                mic = _estrai_mic_da_link(riga)
+
+                # Nome
+                nome = ""
+
+                if idx_nome is not None and idx_nome < len(celle):
+                    nome = _pulisci(celle[idx_nome].get_text())
+
                 if not nome:
-                    nome = isin
+                    link = riga.find("a")
+                    nome = _pulisci(link.get_text()) if link else isin
 
-            # Prezzo
-            prezzo: Decimal | None = None
-            if idx_prezzo is not None and idx_prezzo < len(celle):
-                prezzo = _parsa_numero_lista(celle[idx_prezzo].get_text(), lingua)
+                # Prezzo
+                prezzo = None
 
-            # Cedola
-            cedola: Decimal | None = None
-            if idx_cedola is not None and idx_cedola < len(celle):
-                cedola = _parsa_numero_lista(celle[idx_cedola].get_text(), lingua)
+                if idx_prezzo is not None and idx_prezzo < len(celle):
+                    prezzo = _parsa_numero_lista(
+                        celle[idx_prezzo].get_text(), lingua
+                    )
 
-            # Scadenza
-            scadenza: date | None = None
-            if idx_scadenza is not None and idx_scadenza < len(celle):
-                scadenza = _parsa_data_lista(celle[idx_scadenza].get_text())
+                # Cedola
+                cedola = None
 
-            risultati.append(
-                StrumentoLista(
-                    isin=isin,
-                    nome=nome,
-                    ultimo_prezzo=prezzo,
-                    cedola=cedola,
-                    scadenza=scadenza,
-                    mic=mic,
+                if idx_cedola is not None and idx_cedola < len(celle):
+                    cedola = _parsa_numero_lista(
+                        celle[idx_cedola].get_text(), lingua
+                    )
+
+                # Scadenza
+                scadenza = None
+
+                if idx_scadenza is not None and idx_scadenza < len(celle):
+                    scadenza = _parsa_data_lista(
+                        celle[idx_scadenza].get_text()
+                    )
+
+                risultati.append(
+                    StrumentoLista(
+                        isin=isin,
+                        nome=nome,
+                        ultimo_prezzo=prezzo,
+                        cedola=cedola,
+                        scadenza=scadenza,
+                        mic=mic,
+                    )
                 )
-            )
+
+                nuovi += 1
+
+            # Nessun nuovo ISIN: probabilmente ultima pagina
+            # oppure il parametro page non è supportato.
+            if nuovi == 0:
+                break
 
         return risultati
 
