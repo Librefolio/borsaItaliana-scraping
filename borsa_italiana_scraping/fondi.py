@@ -157,7 +157,8 @@ def _estrai_dati_pagina_fondo(
             if etichetta.startswith("valuta") and valore:
                 valuta = valore
             elif etichetta.startswith("data") and valore:
-                data_nav = _parsa_data_scheda(valore)
+                # Fund pages are Italian only (no lang parameter): dd/mm/yy.
+                data_nav = _parsa_data_scheda(valore, "it")
 
     return nome, nav, variazione, valuta, data_nav
 

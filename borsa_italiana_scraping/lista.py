@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from bs4 import BeautifulSoup
 
 from .eccezioni import DatiNonDisponibili
+from .scheda import _parsa_data
 from .sessione import Sessione
 from .tipi import StrumentoLista
 
@@ -38,17 +39,13 @@ def _parsa_numero_lista(testo: str, lingua: str = "en") -> Decimal | None:
         return None
 
 
-def _parsa_data_lista(testo: str) -> date | None:
-    """Parsa una data dalla tabella lista."""
-    testo = _pulisci(testo)
-    if not testo or testo == "-":
-        return None
-    for fmt in ("%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%d", "%d/%m/%y", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(testo, fmt).date()
-        except ValueError:
-            continue
-    return None
+def _parsa_data_lista(testo: str, lingua: str) -> date | None:
+    """Parsa una data dalla tabella lista.
+
+    Oggi la lista usa l'anno a 4 cifre in entrambe le lingue (``01/11/2027`` /
+    ``2027/11/01``); la lingua serve per le date a 2 cifre, come nella scheda.
+    """
+    return _parsa_data(testo, lingua)
 
 
 def _estrai_isin_da_link(cella: BeautifulSoup) -> str | None:
@@ -200,7 +197,7 @@ def lista_btp(
             # Scadenza
             scadenza: date | None = None
             if idx_scadenza is not None and idx_scadenza < len(celle):
-                scadenza = _parsa_data_lista(celle[idx_scadenza].get_text())
+                scadenza = _parsa_data_lista(celle[idx_scadenza].get_text(), lingua)
 
             risultati.append(
                 StrumentoLista(

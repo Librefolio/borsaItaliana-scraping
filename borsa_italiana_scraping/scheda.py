@@ -59,21 +59,46 @@ def _parsa_numero(testo: str, lingua: str = "en") -> Decimal | None:
         return None
 
 
-def _parsa_data_scheda(testo: str) -> date | None:
-    """Parsa una data dalla pagina scheda (formati vari).
+# Unambiguous formats: ``%Y`` needs exactly 4 digits, so none of these can
+# swallow a 2-digit-year date. Valid for both page languages.
+_FORMATI_DATA_4_CIFRE = ("%d/%m/%Y", "%Y/%m/%d", "%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y", "%m/%d/%Y")
 
-    Supporta sia anni a 4 cifre (``dd/mm/YYYY``) che a 2 cifre
-    (``dd/mm/YY`` → interpretato come 20YY).
+# Borsa Italiana writes 2-digit-year dates in a language-dependent order:
+# ``?lang=it`` → ``dd/mm/yy`` (15/07/27), ``?lang=en`` → ``yy/mm/dd`` (27/07/15).
+# The page language's order comes first; the other one is only a last resort.
+_FORMATI_DATA: dict[str, tuple[str, ...]] = {
+    "it": _FORMATI_DATA_4_CIFRE + ("%d/%m/%y", "%y/%m/%d"),
+    "en": _FORMATI_DATA_4_CIFRE + ("%y/%m/%d", "%d/%m/%y"),
+}
+
+
+def _parsa_data(testo: str, lingua: str) -> date | None:
+    """Parse a Borsa Italiana date, using the page language for 2-digit years.
+
+    Args:
+        testo: raw date text (``15/07/27``, ``27/07/15``, ``06/11/2026``, …).
+        lingua: language of the page the text comes from (``"it"`` or ``"en"``;
+            anything else is treated as ``"en"``, like the number parser).
     """
     testo = _pulisci_testo(testo)
     if not testo or testo == "-":
         return None
-    for fmt in ("%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d.%m.%Y", "%d/%m/%y", "%y/%m/%d"):
+    formati = _FORMATI_DATA["it"] if lingua.lower() == "it" else _FORMATI_DATA["en"]
+    for fmt in formati:
         try:
             return datetime.strptime(testo, fmt).date()
         except ValueError:
             continue
     return None
+
+
+def _parsa_data_scheda(testo: str, lingua: str) -> date | None:
+    """Parsa una data dalla pagina scheda (formati vari).
+
+    Supporta sia anni a 4 cifre (``dd/mm/YYYY``) che a 2 cifre, il cui ordine
+    dipende dalla lingua della pagina (``it``: ``dd/mm/yy``, ``en``: ``yy/mm/dd``).
+    """
+    return _parsa_data(testo, lingua)
 
 
 def _parsa_percentuale(testo: str, lingua: str = "en") -> Decimal | None:
@@ -644,7 +669,7 @@ def _arricchisci_obbligazione(
             "Data Scadenza",
         ],
     )
-    scheda.scadenza = _parsa_data_scheda(val) if val else None
+    scheda.scadenza = _parsa_data_scheda(val, lingua) if val else None
 
     # Emittente
     val = _trova_valore(
@@ -771,7 +796,7 @@ def _arricchisci_obbligazione(
             "Reference Price Date",
         ],
     )
-    scheda.data_prezzo_riferimento = _parsa_data_scheda(val) if val else None
+    scheda.data_prezzo_riferimento = _parsa_data_scheda(val, lingua) if val else None
 
     # Data primo giorno di negoziazione
     val = _trova_valore(
@@ -782,7 +807,7 @@ def _arricchisci_obbligazione(
             "Prima Data di Negoziazione",
         ],
     )
-    scheda.data_primo_giorno = _parsa_data_scheda(val) if val else None
+    scheda.data_primo_giorno = _parsa_data_scheda(val, lingua) if val else None
 
 
 def _arricchisci_azione(
