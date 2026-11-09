@@ -437,12 +437,12 @@ def ottieni_scheda(
 
         # Campi comuni: range giornaliero e annuale
         apertura = _parsa_numero(_trova_valore(soup, ["Opening", "Apertura"]) or "", lingua)
-        minimo_giorno = _parsa_numero(_trova_valore(soup, ["Day Low", "Minimo Giorno"]) or "", lingua)
-        massimo_giorno = _parsa_numero(_trova_valore(soup, ["Day High", "Massimo Giorno"]) or "", lingua)
+        minimo_giorno = _parsa_numero(_trova_valore(soup, ["Day Low", "Minimo Giorno", "Min Oggi"]) or "", lingua)
+        massimo_giorno = _parsa_numero(_trova_valore(soup, ["Day High", "Massimo Giorno", "Max Oggi"]) or "", lingua)
 
         # Year Low/High — il formato può essere "8.808 - 26/02/19"
-        min_anno_raw = _trova_valore(soup, ["Year Low", "Minimo Anno"])
-        max_anno_raw = _trova_valore(soup, ["Year High", "Massimo Anno"])
+        min_anno_raw = _trova_valore(soup, ["Year Low", "Minimo Anno", "Min Anno"])
+        max_anno_raw = _trova_valore(soup, ["Year High", "Massimo Anno", "Max Anno"])
         minimo_anno = _parsa_numero(
             min_anno_raw.split("-")[0].strip() if min_anno_raw and "-" in min_anno_raw else (min_anno_raw or ""), lingua
         )
@@ -581,6 +581,7 @@ def _arricchisci_obbligazione(
             "YTM Gross",
             "Gross Yield to Maturity",
             "Gross yield to maturity",
+            "Rendimento effettivo a scadenza lordo",
         ],
     )
     scheda.rendimento_lordo = _parsa_percentuale(val, lingua) if val else None
@@ -594,6 +595,7 @@ def _arricchisci_obbligazione(
             "YTM Net",
             "Net Yield to Maturity",
             "Net yield to maturity",
+            "Rendimento effettivo a scadenza netto",
         ],
     )
     scheda.rendimento_netto = _parsa_percentuale(val, lingua) if val else None
@@ -641,6 +643,7 @@ def _arricchisci_obbligazione(
             "Cedola Annua",
             "Annual Coupon",
             "Tasso Cedola Annuale",
+            "Tasso Cedola su base Annua",
         ],
     )
     scheda.cedola_annua = _parsa_percentuale(val, lingua) if val else None
@@ -729,6 +732,7 @@ def _arricchisci_obbligazione(
             "Coupon Frequency",
             "Frequenza Cedola",
             "Frequenza Cedole",
+            "Periodicità cedola",
         ],
     )
     scheda.frequenza_cedola = val
@@ -740,6 +744,7 @@ def _arricchisci_obbligazione(
             "Day Count Convention",
             "Convenzione Giorni",
             "Day Count",
+            "Base di Calcolo",
         ],
     )
     scheda.convenzione_giorni = val
@@ -762,6 +767,7 @@ def _arricchisci_obbligazione(
             "Outstanding",
             "Ammontare in Circolazione",
             "Circolante",
+            "Ammontare Emesso",
         ],
     )
     scheda.outstanding = _parsa_numero(val, lingua) if val else None
@@ -862,6 +868,7 @@ def _arricchisci_azione(
             "1 Month Performance",
             "Perf. 1 month",
             "Perf. 1 mese",
+            "Performance 1 mese",
             "Performance 1M",
             "Perf 1M",
             "1 Month",
@@ -876,6 +883,7 @@ def _arricchisci_azione(
             "6 Months Performance",
             "Perf. 6 months",
             "Perf. 6 mesi",
+            "Performance 6 mesi",
             "Performance 6M",
             "Perf 6M",
             "6 Months",
@@ -890,6 +898,7 @@ def _arricchisci_azione(
             "1 Year Performance",
             "Perf. 1 year",
             "Perf. 1 anno",
+            "Performance 1 anno",
             "Performance 1Y",
             "Perf 1Y",
             "1 Year",
