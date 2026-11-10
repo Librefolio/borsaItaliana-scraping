@@ -42,7 +42,7 @@ from .fondi import (
 )
 from .lista import lista_btp
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 
 __all__ = [
     # Sessione
