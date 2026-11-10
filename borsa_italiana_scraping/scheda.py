@@ -483,6 +483,7 @@ def ottieni_scheda(
                         soup_dc = None
                 if soup_dc is not None:
                     _integra_obbligazione_da_dati_completi(scheda, soup_dc, lingua)
+            _correggi_secolo_scadenza(scheda)
 
         # Campi specifici per azioni
         if tipo == "azione":
@@ -493,6 +494,38 @@ def ottieni_scheda(
     finally:
         if sessione_locale:
             sessione.chiudi()
+
+
+def _correggi_secolo_scadenza(scheda: SchedaStrumento) -> None:
+    """Fix the century of a bond expiry date written with a 2-digit year.
+
+    The scheda writes the expiry as ``20/09/17`` (it) or ``17/09/20`` (en), and
+    ``%y`` maps 00-68 to 20xx and 69-99 to 19xx. So the Austria 2117 bond
+    (AT0000A1XML2) came out as 2017-09-20 and the BTP 2072 (IT0005441883) as
+    1972-03-01.
+
+    A bond trades only before it matures, so its expiry cannot come before the
+    reference price date (always written with 4 digits) or the first day of
+    trading. While the expiry is earlier than the later of the two, add 100 years.
+    The check applies to any expiry: a 4-digit one is never earlier than those
+    dates. Without either date the expiry is left as it is (no guess based on
+    today's date, which could push an already expired bond into the next century).
+    """
+    if scheda.scadenza is None:
+        return
+    riferimenti = [d for d in (scheda.data_prezzo_riferimento, scheda.data_primo_giorno) if d is not None]
+    if not riferimenti:
+        return
+    limite = max(riferimenti)
+    scadenza = scheda.scadenza
+    for _ in range(2):  # 19xx -> 20xx -> 21xx at most
+        if scadenza >= limite:
+            break
+        try:
+            scadenza = scadenza.replace(year=scadenza.year + 100)
+        except ValueError:  # 29 February of a year whose +100 is not a leap year
+            scadenza = scadenza.replace(year=scadenza.year + 100, day=28)
+    scheda.scadenza = scadenza
 
 
 def _scarica_dati_completi(
