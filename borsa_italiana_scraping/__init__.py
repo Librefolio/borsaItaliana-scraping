@@ -40,7 +40,15 @@ from .fondi import (
     ottieni_dati_fondo,
     ottieni_dati_fondo_da_url,
 )
-from .lista import lista_btp
+from .lista import (
+    lista_btp,
+    lista_domestic_mot,
+    lista_euro_mot,
+    lista_bot,
+    lista_ctz,
+    lista_cct,
+    lista_green_and_social,
+)
 
 __version__ = "0.3.5"
 
@@ -75,4 +83,10 @@ __all__ = [
     "ottieni_dati_fondo_da_url",
     "estrai_codice_da_url",
     "lista_btp",
+    "lista_domestic_mot",
+    "lista_euro_mot",
+    "lista_bot",
+    "lista_ctz",
+    "lista_cct",
+    "lista_green_and_social"
 ]
