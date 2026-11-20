@@ -27,6 +27,7 @@ from .tipi import (
     SchedaStrumento,
     StoricoRisultato,
     StrumentoLista,
+    StrumentoGreenSocial,
 )
 
 # Funzioni
@@ -73,6 +74,7 @@ __all__ = [
     "StoricoRisultato",
     "StrumentoLista",
     "DatiFondo",
+    "StrumentoGreenSocial"
     # Funzioni
     "ottieni_storico",
     "ottieni_intraday",
