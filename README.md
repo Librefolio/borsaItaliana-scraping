@@ -11,6 +11,7 @@ Supporta **azioni**, **obbligazioni** (BTP, BOT, CCT, CTZ, corporate) e qualsias
 - 💰 **Prezzo corrente** — con fallback automatico API → scraping
 - 🔍 **Ricerca strumenti** — per nome, ISIN, ticker
 - 📋 **Scheda strumento** — metadati ricchi (rendimento, cedola, scadenza, settore…)
+- 📋 **Profilo società** — metadati ricchi per le società (descrizione società, azionariato, contatti, dirigenza, )
 - 📃 **Lista strumenti** — tutti i BTP quotati sul MOT
 - 🍪 **Gestione automatica WAF** — warmup cookie Imperva trasparente
 
@@ -85,24 +86,25 @@ for r in risultati[:5]:
 
 ### Funzioni
 
-| Funzione | Descrizione | Ritorno |
-|----------|-------------|---------|
-| `ottieni_storico(isin, periodo, ...)` | Dati storici OHLCV | `StoricoRisultato` |
-| `ottieni_intraday(isin, risoluzione, ...)` | Dati intraday giornata corrente | `IntradayRisultato` |
-| `ottieni_prezzo_corrente(isin, ...)` | Prezzo più recente | `PrezzoCorrente` |
-| `cerca(query, lingua, ...)` | Ricerca strumenti | `list[RisultatoRicerca]` |
-| `ottieni_scheda(isin, mic, lingua, ...)` | Metadati dalla pagina scheda | `SchedaStrumento` |
-| `lista_btp(lingua, ...)` | Lista completa BTP su MOT | `list[StrumentoLista]` |
+| Funzione                                            | Descrizione                     | Ritorno                    |
+| --------------------------------------------------- | ------------------------------- | -------------------------- |
+| `ottieni_storico(isin, periodo, ...)`             | Dati storici OHLCV              | `StoricoRisultato`       |
+| `ottieni_intraday(isin, risoluzione, ...)`        | Dati intraday giornata corrente | `IntradayRisultato`      |
+| `ottieni_prezzo_corrente(isin, ...)`              | Prezzo più recente             | `PrezzoCorrente`         |
+| `cerca(query, lingua, ...)`                       | Ricerca strumenti               | `list[RisultatoRicerca]` |
+| `ottieni_scheda(isin, mic, lingua, ...)`          | Metadati dalla pagina scheda    | `SchedaStrumento`        |
+| `ottieni_profilo_societa(isin, mic, lingua, ...)` | Metadati dalla pagina scheda    | `Profilo Società`       |
+| `lista_btp(lingua, ...)`                          | Lista completa BTP su MOT       | `list[StrumentoLista]`   |
 
 ### Parametri comuni
 
-| Parametro | Tipo | Descrizione |
-|-----------|------|-------------|
-| `isin` | `str` | Codice ISIN dello strumento |
-| `periodo` | `str` | `1M`, `3M`, `6M`, `1Y`, `3Y`, `5Y`, `MAX` |
-| `risoluzione` | `str` | `1MN`, `5MN`, `15MN`, `30MN`, `1H` |
-| `lingua` | `str` | `"it"` o `"en"` |
-| `sessione` | `Sessione \| None` | Sessione HTTP riutilizzabile (opzionale) |
+| Parametro       | Tipo                | Descrizione                                             |
+| --------------- | ------------------- | ------------------------------------------------------- |
+| `isin`        | `str`             | Codice ISIN dello strumento                             |
+| `periodo`     | `str`             | `1M`, `3M`, `6M`, `1Y`, `3Y`, `5Y`, `MAX` |
+| `risoluzione` | `str`             | `1MN`, `5MN`, `15MN`, `30MN`, `1H`            |
+| `lingua`      | `str`             | `"it"` o `"en"`                                     |
+| `sessione`    | `Sessione \| None` | Sessione HTTP riutilizzabile (opzionale)                |
 
 ### Classe `Sessione`
 
@@ -118,14 +120,15 @@ Supporta il context manager (`with Sessione() as sess: ...`).
 
 ## 📊 Metodi di accesso
 
-| Funzione | Metodo | Endpoint |
-|----------|--------|----------|
-| `ottieni_storico()` | JSON API | `grafici.borsaitaliana.it/api/instruments/.../history/period` |
-| `ottieni_intraday()` | JSON API | `grafici.borsaitaliana.it/api/instruments/.../intraday` |
-| `ottieni_prezzo_corrente()` | JSON API + fallback scraping | API storico 1M → ultimo punto, fallback → pagina scheda |
-| `cerca()` | JSON API (XHR) | `www.borsaitaliana.it/borsa/searchengine/search.html` |
-| `ottieni_scheda()` | Scraping HTML | Pagina scheda strumento |
-| `lista_btp()` | Scraping HTML | Pagina lista BTP |
+| Funzione                      | Metodo                       | Endpoint                                                        |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------- |
+| `ottieni_storico()`         | JSON API                     | `grafici.borsaitaliana.it/api/instruments/.../history/period` |
+| `ottieni_intraday()`        | JSON API                     | `grafici.borsaitaliana.it/api/instruments/.../intraday`       |
+| `ottieni_prezzo_corrente()` | JSON API + fallback scraping | API storico 1M → ultimo punto, fallback → pagina scheda       |
+| `cerca()`                   | JSON API (XHR)               | `www.borsaitaliana.it/borsa/searchengine/search.html`         |
+| `ottieni_scheda()`          | Scraping HTML                | Pagina scheda strumento                                         |
+| `ottieni_profilo_societa()` | Scraping HTML                | Pagina Profilo Società                                         |
+| `lista_btp()`               | Scraping HTML                | Pagina lista BTP                                                |
 
 ## ⚠️ Note tecniche
 
@@ -173,7 +176,7 @@ borsa-italiana-scraping/
 │   ├── storico.py         # Dati storici (JSON API)
 │   ├── tempo_reale.py     # Intraday e prezzo corrente
 │   ├── ricerca.py         # Ricerca strumenti (JSON XHR)
-│   ├── scheda.py          # Scraping pagina scheda
+│   ├── scheda.py          # Scraping pagina scheda e profilo società
 │   ├── lista.py           # Scraping liste strumenti
 │   ├── tipi.py            # Dataclass per i risultati
 │   ├── sessione.py        # Gestione sessione HTTP

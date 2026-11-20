@@ -33,7 +33,7 @@ from .tipi import (
 from .storico import ottieni_storico
 from .tempo_reale import ottieni_intraday, ottieni_prezzo_corrente
 from .ricerca import cerca
-from .scheda import ottieni_scheda
+from .scheda import ottieni_scheda, ottieni_profilo_societa
 from .fondi import (
     DatiFondo,
     estrai_codice_da_url,
@@ -71,6 +71,7 @@ __all__ = [
     "ottieni_prezzo_corrente",
     "cerca",
     "ottieni_scheda",
+    "ottieni_profilo_societa",
     "ottieni_dati_fondo",
     "ottieni_dati_fondo_da_url",
     "estrai_codice_da_url",
