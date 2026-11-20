@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import TypeVar
@@ -15,7 +14,7 @@ from bs4 import BeautifulSoup
 from .eccezioni import DatiNonDisponibili
 from .scheda import _parsa_data
 from .sessione import Sessione
-from .tipi import StrumentoLista
+from .tipi import StrumentoLista, StrumentoGreenSocial
 
 
 # URL delle liste
@@ -30,22 +29,10 @@ _URL_LISTA_GREEN_SOCIAL = ("https://www.borsaitaliana.it/borsa/obbligazioni/gree
 # Limiti comuni a tutte le liste.
 _PAUSA_TRA_PAGINE = 1.0
 
+# The list is split into pages of 20 rows (?page=N): 12 pages in November 2026.
+_MAX_PAGINE_LISTA = 50
+
 T = TypeVar("T")
-
-
-@dataclass(frozen=True, slots=True)
-class StrumentoGreenSocial:
-    """Strumento presente nella lista Green & Social Bond.
-
-    Il modello è distinto da StrumentoLista perché questa lista espone
-    informazioni descrittive (emittente e tipologia di emissione) e non
-    necessariamente prezzo, cedola e scadenza.
-    """
-
-    isin: str
-    nome: str
-    emittente: str | None = None
-    tipologia_emissione: str | None = None
 
 
 def _pulisci(testo: str) -> str:
@@ -221,17 +208,9 @@ def _estrai_green_social(
         return []
 
     idx_isin = _indice_colonna(intestazioni, ("isin", "code", "codice"))
-    idx_nome = _indice_colonna(
-        intestazioni,
-        ("name", "nome", "title", "titolo", "description", "descrizione"),
-    )
-    idx_emittente = _indice_colonna(
-        intestazioni, ("issuer", "emittente", "emitt")
-    )
-    idx_tipologia = _indice_colonna(
-        intestazioni,
-        ("issue type", "emission type", "tipologia", "tipo emissione"),
-    )
+    idx_nome = _indice_colonna(intestazioni,("name", "nome", "title", "titolo", "description", "descrizione"))
+    idx_emittente = _indice_colonna(intestazioni, ("issuer", "emittente", "emitt"))
+    idx_tipologia = _indice_colonna(intestazioni,("issue type", "emission type", "tipologia", "tipo emissione"))
 
     risultati: list[StrumentoGreenSocial] = []
 
@@ -296,6 +275,7 @@ def _scarica_lista(
     *,
     nome_lista: str,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA,
 ) -> list[T]:
     """Motore condiviso per scaricare tutte le pagine di una lista.
 
@@ -310,6 +290,10 @@ def _scarica_lista(
         raise ValueError("lingua deve essere 'it' oppure 'en'")
     if pausa_tra_pagine < 0:
         raise ValueError("pausa_tra_pagine non può essere negativa")
+    if not isinstance(max_pagine, int):
+        raise TypeError("max_pagine deve essere un intero")
+    if max_pagine < 1:
+        raise ValueError("max_pagine deve essere almeno 1")
 
     sessione_locale = sessione is None
     if sessione_locale:
@@ -322,21 +306,24 @@ def _scarica_lista(
         pagina = 1
 
         while True:
+
+            # Rispetta la pausa tra le richieste.
             if pagina > 1 and pausa_tra_pagine > 0:
                 time.sleep(pausa_tra_pagine)
 
             parametri = {"lang": lingua}
+
             if pagina > 1:
                 parametri["page"] = str(pagina)
 
             soup = sessione.get_html(url, params=parametri)
+
             tabella = soup.find("table")
 
             if tabella is None:
                 if pagina == 1:
-                    raise DatiNonDisponibili(
-                        f"Tabella {nome_lista} non trovata nella pagina"
-                    )
+                    raise DatiNonDisponibili(f"Tabella {nome_lista} non trovata nella pagina")
+
                 raise DatiNonDisponibili(
                     f"Tabella {nome_lista} non trovata a pagina {pagina}: "
                     "probabile blocco WAF; la lista sarebbe incompleta"
@@ -347,21 +334,29 @@ def _scarica_lista(
 
             strumenti = estrattore(tabella, lingua)
 
+            # Mantiene soltanto gli strumenti non ancora acquisiti.
             nuovi = [
                 strumento
                 for strumento in strumenti
                 if strumento.isin not in isin_visti
             ]
 
+            # Nessun nuovo ISIN: fine dello scraping.
             if not nuovi:
                 break
 
             risultati.extend(nuovi)
             isin_visti.update(strumento.isin for strumento in nuovi)
 
+            # Verifica la presenza della pagina successiva.
             pagina_successiva = _ha_pagina_successiva(soup, pagina)
 
+            # Il paginatore conferma che siamo all'ultima pagina.
             if pagina_successiva is False:
+                break
+
+            # Raggiunto il numero massimo di pagine richiesto.
+            if pagina >= max_pagine:
                 break
 
             pagina += 1
@@ -378,6 +373,7 @@ def lista_btp(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista completa dei BTP quotati sul MOT."""
     return _scarica_lista(
@@ -387,6 +383,7 @@ def lista_btp(
         sessione,
         nome_lista="BTP",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -395,6 +392,7 @@ def lista_domestic_mot(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista delle obbligazioni domestiche quotate sul MOT."""
     return _scarica_lista(
@@ -404,6 +402,7 @@ def lista_domestic_mot(
         sessione,
         nome_lista="Domestic MOT",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -412,6 +411,7 @@ def lista_euro_mot(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista delle obbligazioni in euro quotate sul MOT."""
     return _scarica_lista(
@@ -421,6 +421,7 @@ def lista_euro_mot(
         sessione,
         nome_lista="Euro MOT",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -429,6 +430,7 @@ def lista_bot(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista dei BOT quotati sul MOT."""
     return _scarica_lista(
@@ -438,6 +440,7 @@ def lista_bot(
         sessione,
         nome_lista="BOT",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -446,6 +449,7 @@ def lista_ctz(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista dei CTZ quotati sul MOT."""
     return _scarica_lista(
@@ -455,6 +459,7 @@ def lista_ctz(
         sessione,
         nome_lista="CTZ",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -463,6 +468,7 @@ def lista_cct(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoLista]:
     """Ottiene la lista dei CCT quotati sul MOT."""
     return _scarica_lista(
@@ -472,6 +478,7 @@ def lista_cct(
         sessione,
         nome_lista="CCT",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
 
 
@@ -480,6 +487,7 @@ def lista_green_and_social(
     sessione: Sessione | None = None,
     *,
     pausa_tra_pagine: float = _PAUSA_TRA_PAGINE,
+    max_pagine: int = _MAX_PAGINE_LISTA
 ) -> list[StrumentoGreenSocial]:
     """Ottiene la lista degli strumenti Green & Social Bond."""
     return _scarica_lista(
@@ -489,4 +497,5 @@ def lista_green_and_social(
         sessione,
         nome_lista="Green & Social Bond",
         pausa_tra_pagine=pausa_tra_pagine,
+        max_pagine=max_pagine
     )
