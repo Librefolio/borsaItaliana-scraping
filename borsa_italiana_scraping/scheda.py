@@ -1092,32 +1092,27 @@ def _estrai_descrizione_profilo(soup: BeautifulSoup) -> str | None:
 
 def _estrai_metadati_fonte(
     contenitore: Tag,
-) -> tuple[str | None, str | None]:
+) -> tuple[str | None, date | None]:
     """Estrae fonte e data di aggiornamento del Profilo Società.
 
     Supporta le etichette:
     - Fonte
     - Source
     - Ultimo aggiornamento
-    - Last updated
+    - Last update
 
-    Supporta date numeriche e date testuali inglesi.
+    Supporta date ISO, numeriche e testuali inglesi.
     """
     testo = _pulisci_testo(
         contenitore.get_text(" ", strip=True)
     )
 
     fonte: str | None = None
-    aggiornamento: str | None = None
-    etichetta_fonte = (r"(?:Fonte|Source)")
-    etichetta_data = (r"(?:Ultimo aggiornamento|Last update)")
+    aggiornamento: date | None = None
+    etichetta_fonte = r"(?:Fonte|Source)"
+    etichetta_data = r"(?:Ultimo aggiornamento|Last update)"
 
-    match_fonte = re.search(
-        rf"{etichetta_fonte}\s*:?\s*(.*?)"
-        rf"(?=\s*{etichetta_data}\s*:|$)",
-        testo,
-        re.IGNORECASE,
-    )
+    match_fonte = re.search(rf"{etichetta_fonte}\s*:?\s*(.*?)"rf"(?=\s*{etichetta_data}\s*:|$)",testo,re.IGNORECASE)
 
     if match_fonte:
         fonte = match_fonte.group(1).strip(" :-–,")
@@ -1130,14 +1125,22 @@ def _estrai_metadati_fonte(
         r"|\d{1,2}\s+[A-Z][a-z]+\s+\d{4}"
     )
 
-    match_data = re.search(
-        rf"{etichetta_data}\s*:?\s*({pattern_data})",
-        testo,
-        re.IGNORECASE,
-    )
+    match_data = re.search(rf"{etichetta_data}\s*:?\s*({pattern_data})",testo,re.IGNORECASE)
 
     if match_data:
-        aggiornamento = match_data.group(1).strip()
+        raw_data = match_data.group(1).strip()
+
+        # Prima prova i formati già supportati dal parser principale.
+        aggiornamento = _parsa_data(raw_data, "it")
+
+        # Fallback per date testuali inglesi.
+        if aggiornamento is None:
+            for fmt in ("%B %d, %Y", "%B %d %Y", "%d %B %Y"):
+                try:
+                    aggiornamento = datetime.strptime(raw_data, fmt).date()
+                    break
+                except ValueError:
+                    continue
 
     return fonte, aggiornamento
 
