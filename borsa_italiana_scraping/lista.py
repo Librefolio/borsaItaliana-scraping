@@ -207,8 +207,8 @@ def _estrai_green_social(
     if header_idx < 0:
         return []
 
-    idx_isin = _indice_colonna(intestazioni, ("isin", "code", "codice"))
-    idx_nome = _indice_colonna(intestazioni,("name", "nome", "title", "titolo", "description", "descrizione"))
+    idx_isin      = _indice_colonna(intestazioni, ("isin", "code", "codice"))
+    idx_nome      = _indice_colonna(intestazioni,("name", "nome", "title", "titolo", "description", "descrizione"))
     idx_emittente = _indice_colonna(intestazioni, ("issuer", "emittente", "emitt"))
     idx_tipologia = _indice_colonna(intestazioni,("issue type", "emission type", "tipologia", "tipo emissione"))
 
