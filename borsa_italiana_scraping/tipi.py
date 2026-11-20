@@ -160,3 +160,72 @@ class StrumentoLista:
     cedola: Decimal | None
     scadenza: date | None
     mic: str
+
+# ---------------------------------------------------------------------------
+# Profilo Societaà
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Dirigente:
+    """Dirigente o figura apicale riportata nel profilo della società."""
+
+    ruolo: str
+    nominativo: str
+
+
+@dataclass
+class DatoSocietario:
+    """Riga della tabella dei dati principali, indicizzata per esercizio.
+
+    I valori numerici sono Decimal; le date sono datetime.date; i valori
+    descrittivi (ad esempio IFRS o EUR - milioni) restano stringhe.
+    """
+
+    voce: str
+    valori: dict[int, Decimal | date | str | None] = field(default_factory=dict)
+
+
+@dataclass
+class Azionista:
+    """Azionista e relativa quota percentuale."""
+
+    nominativo: str
+    percentuale: Decimal | None
+
+
+@dataclass
+class ContattiSocieta:
+    """Recapiti pubblicati nel profilo della società."""
+
+    telefono: str | None = None
+    email: str | None = None
+    sito_web: str | None = None
+
+
+@dataclass
+class IndirizzoSocieta:
+    """Indirizzo della sede riportato da Borsa Italiana."""
+
+    ragione_sociale: str | None = None
+    via: str | None = None
+    cap: str | None = None
+    comune: str | None = None
+    paese: str | None = None
+
+
+@dataclass
+class ProfiloSocieta:
+    """Dati estratti dalla pagina Profilo Società di Borsa Italiana."""
+
+    isin: str
+    mic: str
+    descrizione: str | None = None
+    dirigenti: list[Dirigente] = field(default_factory=list)
+    anni_disponibili: list[int] = field(default_factory=list)
+    dati_principali: list[DatoSocietario] = field(default_factory=list)
+    azionisti: list[Azionista] = field(default_factory=list)
+    indirizzo: IndirizzoSocieta | None = None
+    contatti: ContattiSocieta = field(default_factory=ContattiSocieta)
+    fonte: str | None = None
+    ultimo_aggiornamento: date | None = None
+    url_pagina: str | None = None

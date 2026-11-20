@@ -5,13 +5,20 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-from dataclasses import dataclass, field
-
 from bs4 import BeautifulSoup, Tag
 
 from .eccezioni import DatiNonDisponibili, StrumentoNonRisolto, StrumentoNonTrovato
 from .sessione import Sessione
-from .tipi import SchedaStrumento
+from .tipi import (
+    Azionista,
+    ContattiSocieta,
+    DatoSocietario,
+    Dirigente,
+    IndirizzoSocieta,
+    ProfiloSocieta,
+    SchedaStrumento,
+)
+
 
 # URL universale (segue redirect)
 _URL_SCHEDA = "https://www.borsaitaliana.it/borsa/search/scheda.html"
@@ -961,71 +968,29 @@ def _arricchisci_azione(
 
 _URL_PROFILO_SOCIETA = ("https://www.borsaitaliana.it/borsa/azioni/profilo-societa-dettaglio.html")
 
+def _trova_articolo_sezione(
+    soup: BeautifulSoup,
+    intestazioni: tuple[str, ...],
+) -> Tag | None:
+    """Individua l'articolo corrispondente a una sezione del profilo."""
 
-@dataclass
-class Dirigente:
-    """Dirigente o figura apicale riportata nel profilo della società."""
+    intestazioni_normalizzate = {
+        _pulisci_testo(t).casefold()
+        for t in intestazioni
+    }
 
-    ruolo: str
-    nominativo: str
+    for titolo in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
+        testo = _pulisci_testo(
+            titolo.get_text(" ", strip=True)
+        ).casefold()
 
+        if testo in intestazioni_normalizzate:
+            articolo = titolo.find_parent("article")
 
-@dataclass
-class DatoSocietario:
-    """Riga della tabella dei dati principali, indicizzata per esercizio.
+            if articolo is not None:
+                return articolo
 
-    I valori numerici sono Decimal; le date sono datetime.date; i valori
-    descrittivi (ad esempio IFRS o EUR - milioni) restano stringhe.
-    """
-
-    voce: str
-    valori: dict[int, Decimal | date | str | None] = field(default_factory=dict)
-
-
-@dataclass
-class Azionista:
-    """Azionista e relativa quota percentuale."""
-
-    nominativo: str
-    percentuale: Decimal | None
-
-
-@dataclass
-class ContattiSocieta:
-    """Recapiti pubblicati nel profilo della società."""
-
-    telefono: str | None = None
-    sito_web: str | None = None
-
-
-@dataclass
-class IndirizzoSocieta:
-    """Indirizzo della sede riportato da Borsa Italiana."""
-
-    ragione_sociale: str | None = None
-    via: str | None = None
-    cap: str | None = None
-    comune: str | None = None
-    paese: str | None = None
-
-
-@dataclass
-class ProfiloSocieta:
-    """Dati estratti dalla pagina Profilo Società di Borsa Italiana."""
-
-    isin: str
-    mic: str
-    descrizione: str | None = None
-    dirigenti: list[Dirigente] = field(default_factory=list)
-    anni_disponibili: list[int] = field(default_factory=list)
-    dati_principali: list[DatoSocietario] = field(default_factory=list)
-    azionisti: list[Azionista] = field(default_factory=list)
-    indirizzo: IndirizzoSocieta | None = None
-    contatti: ContattiSocieta = field(default_factory=ContattiSocieta)
-    fonte: str | None = None
-    ultimo_aggiornamento: date | None = None
-    url_pagina: str | None = None
-
+    return None
 
 def _testo_cella(cella: Tag) -> str:
     """Estrae il testo di una cella, normalizzando spazi e ritorni a capo."""
@@ -1124,230 +1089,521 @@ def _estrai_descrizione_profilo(soup: BeautifulSoup) -> str | None:
     return " ".join(parti) or None
 
 
-def _estrai_metadati_fonte(soup: BeautifulSoup) -> tuple[str | None, date | None]:
-    """Estrae fonte e data di aggiornamento dal testo della pagina."""
-    testo = soup.get_text(" ", strip=True)
-    match = re.search(
-        r"Fonte\s*:\s*(.*?)\s*(?:[-–—]\s*)?Ultimo aggiornamento\s*:\s*(\d{4}-\d{2}-\d{2})",
-        testo,
-        flags=re.IGNORECASE,
+
+def _estrai_metadati_fonte(
+    contenitore: Tag,
+) -> tuple[str | None, str | None]:
+    """Estrae fonte e data di aggiornamento del Profilo Società.
+
+    Supporta le etichette:
+    - Fonte
+    - Source
+    - Ultimo aggiornamento
+    - Last updated
+
+    Supporta date numeriche e date testuali inglesi.
+    """
+    testo = _pulisci_testo(
+        contenitore.get_text(" ", strip=True)
     )
-    if not match:
-        return None, None
-    fonte = _pulisci_testo(match.group(1)).strip(" -–—") or None
-    try:
-        aggiornamento = date.fromisoformat(match.group(2))
-    except ValueError:
-        aggiornamento = None
+
+    fonte: str | None = None
+    aggiornamento: str | None = None
+    etichetta_fonte = (r"(?:Fonte|Source)")
+    etichetta_data = (r"(?:Ultimo aggiornamento|Last update)")
+
+    match_fonte = re.search(
+        rf"{etichetta_fonte}\s*:?\s*(.*?)"
+        rf"(?=\s*{etichetta_data}\s*:|$)",
+        testo,
+        re.IGNORECASE,
+    )
+
+    if match_fonte:
+        fonte = match_fonte.group(1).strip(" :-–,")
+        fonte = fonte or None
+
+    pattern_data = (
+        r"\d{4}-\d{2}-\d{2}"
+        r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"
+        r"|[A-Z][a-z]+\s+\d{1,2},?\s+\d{4}"
+        r"|\d{1,2}\s+[A-Z][a-z]+\s+\d{4}"
+    )
+
+    match_data = re.search(
+        rf"{etichetta_data}\s*:?\s*({pattern_data})",
+        testo,
+        re.IGNORECASE,
+    )
+
+    if match_data:
+        aggiornamento = match_data.group(1).strip()
+
     return fonte, aggiornamento
 
 
-def _estrai_indirizzo_e_contatti(soup: BeautifulSoup) -> tuple[IndirizzoSocieta | None, ContattiSocieta]:
-    """Estrae indirizzo e recapiti dal riquadro con intestazione Indirizzo."""
-    for articolo in soup.find_all("article"):
-        titolo = articolo.find(
-            lambda tag: isinstance(tag, Tag)
-            and tag.name in {"h2", "h3", "h4"}
-            and _pulisci_testo(tag.get_text()).casefold() == "indirizzo"
-        )
-        if titolo is None:
-            continue
 
-        contenitore = articolo.find(
-            lambda tag: isinstance(tag, Tag)
-            and tag.name == "div"
-            and "line-height-md" in (tag.get("class") or [])
-        )
-        if contenitore is None:
-            contenitore = articolo
+def _estrai_indirizzo_e_contatti(
+    articolo_indirizzo: Tag | None,
+    articolo_contatti: Tag | None,
+) -> tuple[IndirizzoSocieta | None, ContattiSocieta]:
 
-        nome_tag = contenitore.find(["h3", "h4"])
-        ragione_sociale = _testo_cella(nome_tag) if nome_tag else None
+    telefono = None
+    sito_web = None
+    email = None
 
-        telefono = None
-        link_telefono = contenitore.find("a", href=re.compile(r"^tel:", re.I))
-        if link_telefono is not None:
-            telefono = _pulisci_testo(link_telefono.get("title") or link_telefono.get_text()) or None
+    ragione_sociale = None
+    via = None
+    cap = None
+    comune = None
+    paese = None
+    
+    # INDIRIZZO
+    if articolo_indirizzo is not None:
 
-        sito_web = None
-        for link in contenitore.find_all("a", href=True):
-            href = link["href"].strip()
-            if href.lower().startswith(("http://", "https://")):
-                sito_web = href
-                break
+        contenitore = articolo_indirizzo.find("div", class_=lambda c: c and "h-bg--white" in c)
 
-        # Il testo viene separato sui <br>, così CAP, comune e paese restano
-        # distinguibili. Si esclude il paragrafo che contiene fonte e data.
-        parti = []
-        for nodo in contenitore.find_all(string=True):
-            if nodo.find_parent("p") is not None or nodo.find_parent("a") is not None:
-                continue
-            testo = _pulisci_testo(str(nodo).replace("\xa0", " "))
-            if testo and testo != ragione_sociale:
-                parti.append(testo)
+        if contenitore is not None:
 
-        righe = [
-            r for r in parti
-            if r.casefold() not in {"indirizzo"}
-            and not r.casefold().startswith(("numero di telefono:", "phone number:"))
-        ]
-        via = righe[0] if righe else None
-        cap = comune = paese = None
-        if len(righe) > 1:
-            # Nel markup italiano il CAP può essere prefissato dal codice paese
-            # (es. IT-20093); lo conserviamo senza perdere l'informazione.
-            match_cap = re.match(r"^([A-Z]{2}-)?(\d{4,6})(?:\s+(.*))?$", righe[1])
-            if match_cap:
-                cap = (match_cap.group(1) or "") + match_cap.group(2)
-                if match_cap.group(3):
-                    comune = match_cap.group(3)
-                    paese = righe[2] if len(righe) > 2 else None
-                else:
-                    comune = righe[2] if len(righe) > 2 else None
-                    paese = righe[3] if len(righe) > 3 else None
-            else:
-                comune = righe[1]
-                paese = righe[2] if len(righe) > 2 else None
+            # Ragione sociale: normalmente è nell'h3 interno.
+            intestazione = contenitore.find("h3")
 
-        indirizzo = IndirizzoSocieta(
-            ragione_sociale=ragione_sociale,
-            via=via,
-            cap=cap,
-            comune=comune,
-            paese=paese,
-        )
-        return indirizzo, ContattiSocieta(telefono=telefono, sito_web=sito_web)
+            if intestazione is not None:
+                ragione_sociale = _pulisci_testo(
+                    intestazione.get_text(" ", strip=True)
+                ) or None
 
-    return None, ContattiSocieta()
+            # Telefono dal link tel:
+            link_tel = contenitore.find(
+                "a",
+                href=re.compile(r"^tel:", re.I)
+            )
+
+            if link_tel is not None:
+                telefono = _pulisci_testo(
+                    link_tel.get_text(" ", strip=True)
+                ) or str(link_tel.get("href", "")).removeprefix("tel:")
+
+            # Sito web: primo link esterno.
+            for link in contenitore.find_all("a", href=True):
+
+                href = str(link["href"]).strip()
+
+                if not href.lower().startswith(("http://", "https://")):
+                    continue
+
+                dominio = re.sub(
+                    r"^https?://",
+                    "",
+                    href,
+                    flags=re.I,
+                ).split("/")[0].lower()
+
+                if dominio not in {
+                    "borsaitaliana.it",
+                    "www.borsaitaliana.it",
+                    "londonstockexchange.com",
+                    "www.londonstockexchange.com",
+                }:
+                    sito_web = href
+                    break
+
+            # Estrazione delle righe dell'indirizzo.
+            righe = [
+                _pulisci_testo(x)
+                for x in contenitore.stripped_strings
+                if _pulisci_testo(x)
+            ]
+
+            # Escludiamo intestazione, ragione sociale,
+            # telefono e URL.
+            righe_indirizzo = []
+
+            for riga in righe:
+
+                if ragione_sociale and riga == ragione_sociale:
+                    continue
+
+                if re.match(
+                    r"^(numero di telefono|telefono|phone|tel)\s*:",
+                    riga,
+                    re.I,
+                ):
+                    continue
+
+                if re.match(r"^https?://", riga, re.I):
+                    continue
+
+                if riga == (link_tel.get_text(" ", strip=True) if link_tel else None):
+                    continue
+
+                righe_indirizzo.append(riga)
+
+            # Individuazione CAP e prefisso internazionale.
+            for indice, riga in enumerate(righe_indirizzo):
+
+                match = re.search(
+                    r"\b(?:[A-Z]{2}[- ]?)?(\d{5})\b",
+                    riga,
+                    re.I,
+                )
+
+                if match:
+                    cap = match.group(1)
+
+                    # Eventuale comune sulla stessa riga.
+                    resto = (riga[:match.start()] + riga[match.end():]).strip(" ,-")
+                    if resto:
+                        comune = resto
+
+                    # La riga successiva normalmente contiene
+                    # il comune.
+                    if comune is None and indice + 1 < len(righe_indirizzo):
+                        comune = righe_indirizzo[indice + 1]
+
+                    # La riga successiva al comune contiene
+                    # normalmente il paese.
+                    if (
+                        comune is not None
+                        and indice + 2 < len(righe_indirizzo)
+                    ):
+                        paese = righe_indirizzo[indice + 2]
+
+                    break
+
+            # La prima riga precedente al CAP è normalmente
+            # la via.
+            if cap is not None:
+                for riga in righe_indirizzo:
+                    if re.search(r"\b\d{5}\b", riga):
+                        break
+
+                    if not via:
+                        via = riga
+
+            # Fallback per indirizzi senza CAP.
+            elif righe_indirizzo:
+                via = righe_indirizzo[0]
+
+                if len(righe_indirizzo) > 1:
+                    comune = righe_indirizzo[1]
+
+                if len(righe_indirizzo) > 2:
+                    paese = righe_indirizzo[2]
+
+    # CONTATTI
+    if articolo_contatti is not None:
+
+        contenitore = articolo_contatti.find("div",class_=lambda c: c and "h-bg--white" in c)
+        if contenitore is not None:
+            link_email = contenitore.find("a",href=re.compile(r"^mailto:", re.I))
+            if link_email is not None:
+                email = str(link_email.get("href", "")).removeprefix("mailto:").strip()
+
+    indirizzo = None
+
+    if any((ragione_sociale, via, cap, comune, paese)):
+        indirizzo = IndirizzoSocieta(ragione_sociale=ragione_sociale,via=via,cap=cap,comune=comune,paese=paese)
+
+    contatti = ContattiSocieta(telefono=telefono,email=email,sito_web=sito_web)
+
+    return indirizzo, contatti
 
 
 def _estrai_tabelle_profilo(
     soup: BeautifulSoup,
     lingua: str,
 ) -> tuple[list[Dirigente], list[int], list[DatoSocietario], list[Azionista]]:
-    """Classifica ed estrae le tabelle di dirigenti, dati e azionariato.
+    """Classifica ed estrae le tabelle del Profilo Società.
 
-    La classificazione è basata sul contenuto e non sulla singola società,
-    così da non dipendere da nomi, ISIN o numero fisso di righe.
+    Estrae:
+    - dirigenti;
+    - anni disponibili;
+    - dati societari;
+    - azionisti e relative percentuali.
+
+    La classificazione considera intestazioni, contenuto e struttura HTML.
+    Non elimina automaticamente la prima riga delle tabelle azionarie.
     """
     dirigenti: list[Dirigente] = []
     anni: list[int] = []
     dati: list[DatoSocietario] = []
     azionisti: list[Azionista] = []
 
+    parole_azionariato = (
+        "azionariato",
+        "azionista",
+        "azionisti",
+        "shareholder",
+        "shareholders",
+        "shareholding",
+        "ownership",
+        "ownership structure",
+        "major shareholders",
+    )
+
+    parole_intestazione_azionisti = {
+        "azionista",
+        "azionisti",
+        "shareholder",
+        "shareholders",
+        "shareholder name",
+        "shareholding",
+        "name",
+        "nome",
+        "percentage",
+        "percentage held",
+        "quota",
+        "percentuale",
+        "holding",
+        "stake",
+    }
+
+    parole_intestazione_dirigenti = {
+        "ruolo",
+        "carica",
+        "position",
+        "title",
+        "role",
+        "nominativo",
+        "nome",
+        "name",
+        "director",
+        "directors",
+    }
+
+    parole_dirigenti = (
+        "amministratore delegato",
+        "chief executive",
+        "chief financial",
+        "chief operating",
+        "chief",
+        "ceo",
+        "cfo",
+        "coo",
+        "presidente",
+        "chairman",
+        "chairperson",
+        "director",
+        "directors",
+        "executive director",
+        "non-executive director",
+        "board of directors",
+        "management",
+        "dirigenti",
+        "direttore",
+    )
+
+    def normalizza(testo: str) -> str:
+        return _pulisci_testo(testo).casefold().strip(" :")
+
+    def e_intestazione_azionisti(riga: list[str]) -> bool:
+        valori = {normalizza(v) for v in riga if v}
+
+        return bool(
+            valori
+            and any(
+                valore in parole_intestazione_azionisti
+                for valore in valori
+            )
+            and not any(
+                re.search(r"\d", valore)
+                for valore in valori
+            )
+        )
+
+    def e_riga_percentuale(riga: list[str]) -> bool:
+        if len(riga) < 2:
+            return False
+
+        ultimo = riga[-1].strip()
+
+        # Per l'azionariato accettiamo percentuali esplicite.
+        # Senza %, accettiamo solo numeri plausibili come percentuale.
+        if "%" in ultimo:
+            return _parsa_percentuale(ultimo, lingua) is not None
+
+        valore = _parsa_numero(ultimo, lingua)
+
+        return valore is not None and Decimal("0") <= valore <= Decimal("100")
+
     for tabella in soup.find_all("table"):
         righe = _righe_tabella(tabella)
+
         if len(righe) < 2:
             continue
 
-        testo_tabella = " ".join(" ".join(r) for r in righe).casefold()
+        testo_tabella = " ".join(" ".join(riga) for riga in righe).casefold()
+        intestazione = righe[0]
+
+        # Individuazione della tabella azionariato
         contenitore_azionariato = tabella.find_parent(
             lambda tag: isinstance(tag, Tag)
-            and tag.name == "div"
-            and "azionariato" in _pulisci_testo(tag.get_text(" ", strip=True)).casefold()
+            and tag.name in {"div", "section", "article"}
+            and any(
+                parola in _pulisci_testo(
+                    tag.get_text(" ", strip=True)
+                ).casefold()
+                for parola in parole_azionariato
+            )
         )
-        azionariato_esplicito = contenitore_azionariato is not None
-        intestazione = righe[0]
-        anni_intestazione = [
-            int(cella) for cella in intestazione
-            if re.fullmatch(r"(?:19|20)\d{2}", cella.strip())
-        ]
 
-        # Tabella dei dati principali: la prima riga contiene gli esercizi.
-        if len(anni_intestazione) >= 2:
-            anni = sorted(set(anni_intestazione), reverse=True)
+        azionariato_esplicito = contenitore_azionariato is not None
+
+        contiene_parole_azionariato = any(
+            parola in testo_tabella
+            for parola in parole_azionariato
+        )
+
+        # Tabella dei dati societari
+        colonne_anni: list[tuple[int, int]] = []
+
+        for indice, cella in enumerate(intestazione):
+            valore = cella.strip()
+
+            if re.fullmatch(r"(?:19|20)\d{2}", valore):
+                colonne_anni.append((indice, int(valore)))
+
+        if len(colonne_anni) >= 2:
+            anni_tabella = sorted(
+                {anno for _, anno in colonne_anni},
+                reverse=True,
+            )
+
+            anni = sorted(set(anni).union(anni_tabella),reverse=True)
+
             for riga in righe[1:]:
                 if len(riga) < 2:
                     continue
-                voce = riga[0]
+
+                voce = riga[0].strip()
+
                 if not voce:
                     continue
+
                 valori: dict[int, Decimal | date | str | None] = {}
-                # Associa le colonne ai rispettivi anni, ignorando eventuali
-                # celle aggiuntive senza intestazione (es. colonna Millenium).
-                colonne_anni: list[tuple[int, int]] = []
-                for indice, cella in enumerate(intestazione):
-                    if re.fullmatch(r"(?:19|20)\d{2}", cella.strip()):
-                        colonne_anni.append((indice, int(cella)))
+
                 for indice, anno in colonne_anni:
                     raw = riga[indice] if indice < len(riga) else ""
                     valori[anno] = _valore_profilo(raw, lingua)
-                dati.append(DatoSocietario(voce=voce, valori=valori))
+
+                dati.append(DatoSocietario(voce=voce,valori=valori))
+
             continue
 
-        # Tabella azionariato: le righe riportano percentuali.
-        righe_da_esaminare = righe if azionariato_esplicito else righe[1:]
-        righe_con_percentuale = [
-            r for r in righe_da_esaminare
-            if len(r) >= 2 and ("%" in r[-1] or _parsa_numero(r[-1], lingua) is not None)
-        ]
-        if righe_con_percentuale and (
-            azionariato_esplicito or "%" in testo_tabella or "azion" in testo_tabella or "shareholder" in testo_tabella
+        # Tabella azionariato
+        righe_azionisti = []
+
+        for indice, riga in enumerate(righe):
+            if len(riga) < 2:
+                continue
+
+            # Salta una riga solo se è effettivamente un'intestazione.
+            if e_intestazione_azionisti(riga):
+                continue
+
+            if e_riga_percentuale(riga):
+                righe_azionisti.append(riga)
+
+        if (
+            righe_azionisti
+            and (
+                azionariato_esplicito
+                or contiene_parole_azionariato
+            )
         ):
-            for riga in righe_con_percentuale:
-                nome = riga[0]
-                raw_percentuale = riga[-1]
-                percentuale = _parsa_percentuale(raw_percentuale, lingua)
+            for riga in righe_azionisti:
+                nome = riga[0].strip()
+                raw_percentuale = riga[-1].strip()
+
+                percentuale = _parsa_percentuale(
+                    raw_percentuale,
+                    lingua,
+                )
+
                 if percentuale is None:
-                    percentuale = _parsa_numero(raw_percentuale, lingua)
-                if nome and percentuale is not None:
-                    azionisti.append(Azionista(nome, percentuale))
+                    percentuale = _parsa_numero(
+                        raw_percentuale,
+                        lingua,
+                    )
+
+                if not nome or percentuale is None:
+                    continue
+
+                if not Decimal("0") <= percentuale <= Decimal("100"):
+                    continue
+
+                azionisti.append(Azionista(nome,percentuale))
+
             continue
 
-        # Tabella dirigenti: due colonne testuali ruolo/nominativo.
-        if len(righe) >= 2 and any(
+        # Tabella dirigenti
+        contiene_parole_dirigenti = any(
             parola in testo_tabella
-            for parola in ("amministratore delegato", "chief", "direttore","presidente", "management", "dirigenti")
-        ):
+            for parola in parole_dirigenti
+        )
+
+        if contiene_parole_dirigenti:
             for riga in righe:
                 if len(riga) < 2:
                     continue
-                ruolo, nominativo = riga[0], riga[-1]
+
+                ruolo = riga[0].strip()
+                nominativo = riga[-1].strip()
+
+                ruolo_norm = normalizza(ruolo)
+                nominativo_norm = normalizza(nominativo)
+
+                if (
+                    ruolo_norm in parole_intestazione_dirigenti
+                    or nominativo_norm in parole_intestazione_dirigenti
+                ):
+                    continue
+
                 if not ruolo or not nominativo:
                     continue
-                if ruolo.casefold() in {"ruolo", "carica", "position", "title"}:
+
+                # Evita righe che sono chiaramente percentuali.
+                if re.search(r"\d+\s*%", nominativo):
                     continue
-                if nominativo.casefold() in {"nominativo", "nome", "name"}:
-                    continue
-                # Evita di trattare una riga percentuale come dirigente.
-                if "%" in nominativo:
-                    continue
-                dirigenti.append(Dirigente(ruolo, nominativo))
+
+                dirigenti.append(Dirigente(ruolo,nominativo))
 
     return dirigenti, anni, dati, azionisti
+
 
 
 def ottieni_profilo_societa(
     isin: str,
     mic: str | None = None,
-    lingua: str = "it",
+    lingua: str = "en",
     sessione: Sessione | None = None,
 ) -> ProfiloSocieta:
-    """Scarica ed estrae il Profilo Società da Borsa Italiana.
+    """
+    Scarica ed estrae il profilo societario da Borsa Italiana.
 
-    Se ``mic`` non è specificato, lo ricava dall'URL canonico ottenuto
-    seguendo il redirect della pagina universale, come in ``ottieni_scheda``.
+    Recupera descrizione, dirigenti, dati principali, azionariato,
+    indirizzo, contatti e metadati della fonte.
 
     Args:
-        isin: codice ISIN dello strumento azionario.
-        mic: codice MIC del mercato (es. ``"MTAA"``); se None viene risolto
-            automaticamente tramite la pagina universale.
-        lingua: lingua della pagina (``"it"`` o ``"en"``).
-        sessione: sessione HTTP riutilizzabile; se omessa viene creata e chiusa
-            automaticamente.
+        isin: Codice ISIN dello strumento.
+        mic: Codice MIC del mercato; se omesso viene ricavato dall'URL canonico.
+        lingua: Lingua della pagina (it o en).
+        sessione: Sessione HTTP riutilizzabile; se omessa viene creata
+            e chiusa automaticamente.
 
     Returns:
-        Un oggetto ``ProfiloSocieta``. Le celle numeriche sono convertite in
-        ``Decimal`` senza passare da ``float``; le celle vuote diventano None.
+        ProfiloSocieta con le informazioni disponibili.
 
     Raises:
-        StrumentoNonRisolto: se il MIC non è fornito e la pagina universale
-            non consente di ricavarlo.
-        StrumentoNonTrovato: se la pagina non esiste o non contiene un profilo.
+        ValueError: Se il codice ISIN è vuoto.
+        StrumentoNonRisolto: Se non è possibile ricavare il MIC.
+        StrumentoNonTrovato: Se il profilo non esiste o non contiene dati.
     """
     isin = isin.strip().upper()
     mic = mic.strip().upper() if mic else None
     lingua = lingua.lower()
+
     if not isin:
         raise ValueError("Il codice ISIN è obbligatorio")
 
@@ -1356,36 +1612,61 @@ def ottieni_profilo_societa(
         sessione = Sessione()
 
     try:
-        # Se il MIC manca, riutilizza la risoluzione già presente in
-        # ottieni_scheda: una sola richiesta alla pagina universale e lettura
-        # del MIC dall'URL canonico restituito dopo il redirect.
         if mic is None:
-            _, url_finale = sessione.get_html_con_url(_URL_SCHEDA, params={"code": isin, "lang": lingua})
+            _, url_finale = sessione.get_html_con_url(_URL_SCHEDA,params={"code": isin, "lang": lingua})
+
             match_mic = re.search(
                 rf"/{re.escape(isin)}-([A-Z0-9]{{4}})\.html(?:$|[?#])",
                 url_finale,
                 flags=re.IGNORECASE,
             )
+
             if match_mic is None:
                 raise StrumentoNonRisolto(
-                    f"Impossibile ricavare il MIC per '{isin}' dalla pagina universale "
-                    f"(URL finale: {url_finale!r}). Fornire mic esplicitamente."
+                    f"Impossibile ricavare il MIC per '{isin}' "
+                    f"dalla pagina universale (URL finale: {url_finale!r}). "
+                    "Fornire il MIC esplicitamente."
                 )
+
             mic = match_mic.group(1).upper()
 
         parametri = {"isin": isin, "mic": mic, "lang": lingua}
         soup = sessione.get_html(_URL_PROFILO_SOCIETA, params=parametri)
 
-        testo_pagina = soup.get_text(" ", strip=True)
-        if any(msg in testo_pagina.casefold() for msg in ("page not found", "pagina non trovata", "pagina richiesta non esiste")):
+        testo_pagina = soup.get_text(" ", strip=True).casefold()
+        if any(
+            messaggio in testo_pagina
+            for messaggio in (
+                "page not found",
+                "pagina non trovata",
+                "pagina richiesta non esiste",
+            )
+        ):
             raise StrumentoNonTrovato(f"Profilo società non trovato per ISIN '{isin}' e MIC '{mic}'")
+
+        articolo_profilo = _trova_articolo_sezione(soup,("Profilo società", "Profilo societa", "Company profile"))
+        articolo_indirizzo = _trova_articolo_sezione(soup, ("Indirizzo", "Address"))
+        articolo_contatti = _trova_articolo_sezione(soup,("Contatti", "Contacts", "Contact"))
+
+        if articolo_profilo is None:
+            raise StrumentoNonTrovato(f"Sezione Profilo Società non trovata per ISIN '{isin}' e MIC '{mic}'")
 
         descrizione = _estrai_descrizione_profilo(soup)
         dirigenti, anni, dati, azionisti = _estrai_tabelle_profilo(soup, lingua)
-        indirizzo, contatti = _estrai_indirizzo_e_contatti(soup)
-        fonte, aggiornamento = _estrai_metadati_fonte(soup)
+        indirizzo, contatti = _estrai_indirizzo_e_contatti(articolo_indirizzo, articolo_contatti)
+        fonte, aggiornamento = _estrai_metadati_fonte(articolo_profilo)
 
-        if not any((descrizione, dirigenti, dati, azionisti, indirizzo, contatti.telefono, contatti.sito_web)):
+        if not any((
+            descrizione,
+            dirigenti,
+            anni,
+            dati,
+            azionisti,
+            indirizzo,
+            contatti.telefono,
+            contatti.email,
+            contatti.sito_web,
+        )):
             raise StrumentoNonTrovato(f"Nessun dato del Profilo Società disponibile per ISIN '{isin}' e MIC '{mic}'")
 
         return ProfiloSocieta(
@@ -1402,6 +1683,7 @@ def ottieni_profilo_societa(
             ultimo_aggiornamento=aggiornamento,
             url_pagina=f"{_URL_PROFILO_SOCIETA}?isin={isin}&mic={mic}&lang={lingua}",
         )
+
     finally:
         if sessione_locale:
             sessione.chiudi()
