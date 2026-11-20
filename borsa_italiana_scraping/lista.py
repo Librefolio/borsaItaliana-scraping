@@ -210,7 +210,7 @@ def _estrai_green_social(
     idx_isin      = _indice_colonna(intestazioni, ("isin", "code", "codice"))
     idx_nome      = _indice_colonna(intestazioni,("name", "nome", "title", "titolo", "description", "descrizione"))
     idx_emittente = _indice_colonna(intestazioni, ("issuer", "emittente", "emitt"))
-    idx_tipologia = _indice_colonna(intestazioni,("issue type", "emission type", "tipologia", "tipo emissione"))
+    idx_tipologia = _indice_colonna(intestazioni,("issue type", "emission type", "tipologia", "tipo emissione","transaction type"))
 
     risultati: list[StrumentoGreenSocial] = []
 
