@@ -19,6 +19,12 @@ from borsa_italiana_scraping import (
     ottieni_prezzo_corrente,
     ottieni_scheda,
     lista_btp,
+    lista_bot,
+    lista_cct,
+    lista_ctz,
+    lista_domestic_mot,
+    lista_euro_mot,
+    lista_green_and_social,
     cerca,
     DatiNonDisponibili,
 )

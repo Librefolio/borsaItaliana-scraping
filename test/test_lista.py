@@ -14,7 +14,17 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from borsa_italiana_scraping import DatiNonDisponibili, lista_btp
+from borsa_italiana_scraping import (
+    DatiNonDisponibili,
+    lista_btp,
+    lista_bot,
+    lista_ctz,
+    lista_cct,
+    lista_domestic_mot,
+    lista_euro_mot,
+    lista_green_and_social
+)
+
 from borsa_italiana_scraping import lista as lista_mod
 
 _FIXTURES = Path(__file__).parent / "fixtures"
@@ -143,3 +153,88 @@ def test_pagina_successiva_senza_tabella_non_restituisce_lista_incompleta() -> N
 
     with pytest.raises(DatiNonDisponibili, match="pagina 2"):
         lista_btp(lingua="en", sessione=s)
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_domestic_mot(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_domestic_mot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_domestic_mot(lingua="en", sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati > 0 :
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": "en"}
+
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_euro_mot(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_euro_mot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_euro_mot(lingua=lingua, sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati:
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_bot(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_bot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_bot(lingua=lingua, sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati:
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_ctz(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_ctz_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_ctz(lingua=lingua, sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati:
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_cct(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_cct_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_cct(lingua=lingua, sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati:
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_green_and_social(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_green_and_social_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_green_and_social(lingua=lingua, sessione=s)
+
+    numero_risultati = len(risultati) > 0
+    if numero_risultati:
+        assert all(r.isin for r in risultati)
+        assert len({r.isin for r in risultati}) == len(risultati)
+        assert s.richieste[0] == {"lang": lingua}
