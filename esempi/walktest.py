@@ -312,8 +312,7 @@ automaticamente metadati, storico e prezzo corrente.
         print(f"     {'Data':<12} {'Apertura':>10} {'Max':>10} {'Min':>10} {'Chiusura':>10} {'Volume':>12}")
         for p in punti[-5:]:
             print(
-                f"     {p.data!s:<12} {p.apertura:>10} {p.massimo:>10} "
-                f"{p.minimo:>10} {p.chiusura:>10} {p.volume:>12,}"
+                f"     {p.data!s:<12} {p.apertura:>10} {p.massimo:>10} {p.minimo:>10} {p.chiusura:>10} {p.volume:>12,}"
             )
 
     # --- Riepilogo ---
