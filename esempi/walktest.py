@@ -150,7 +150,7 @@ Campi: variano in base al tipo (azione vs obbligazione)
     print(f"     Prezzo:            {scheda.prezzo} {scheda.valuta}")
     print(f"     Variazione:        {scheda.variazione_percentuale}%")
     print(f"     Mercato:           {scheda.mercato}")
-    print(f"     --- Campi obbligazione ---")
+    print("     --- Campi obbligazione ---")
     print(f"     Rendimento lordo:  {scheda.rendimento_lordo}")
     print(f"     Rendimento netto:  {scheda.rendimento_netto}")
     print(f"     Cedola annua:      {scheda.cedola_annua}")
@@ -165,7 +165,7 @@ Campi: variano in base al tipo (azione vs obbligazione)
     print(f"     Tipo:              {scheda_az.tipo}")
     print(f"     Prezzo:            {scheda_az.prezzo} {scheda_az.valuta}")
     print(f"     Mercato:           {scheda_az.mercato}")
-    print(f"     --- Campi azione ---")
+    print("     --- Campi azione ---")
     print(f"     Settore:           {scheda_az.settore}")
     print(f"     Capitalizzazione:  {scheda_az.capitalizzazione}")
     print(f"     Ticker:            {scheda_az.ticker}")
@@ -256,7 +256,7 @@ automaticamente metadati, storico e prezzo corrente.
 
     # --- Fase 2: Scheda (metadati ricchi) ---
     print(f"\n  {'═' * 56}")
-    print(f"  📋 Fase 2: Metadati dalla scheda")
+    print("  📋 Fase 2: Metadati dalla scheda")
     print(f"  {'═' * 56}")
     scheda = ottieni_scheda(isin, lingua="en", sessione=sess)
     print(f"     Nome completo:     {scheda.nome}")
@@ -276,7 +276,7 @@ automaticamente metadati, storico e prezzo corrente.
 
     # --- Fase 3: Prezzo corrente ---
     print(f"\n  {'═' * 56}")
-    print(f"  💰 Fase 3: Prezzo corrente")
+    print("  💰 Fase 3: Prezzo corrente")
     print(f"  {'═' * 56}")
     prezzo = ottieni_prezzo_corrente(isin, sessione=sess)
     print(f"     Prezzo:    {prezzo.prezzo} {prezzo.valuta}")
@@ -286,7 +286,7 @@ automaticamente metadati, storico e prezzo corrente.
 
     # --- Fase 4: Storico OHLCV ---
     print(f"\n  {'═' * 56}")
-    print(f"  📈 Fase 4: Storico OHLCV (ultimi 3 mesi)")
+    print("  📈 Fase 4: Storico OHLCV (ultimi 3 mesi)")
     print(f"  {'═' * 56}")
     storico = ottieni_storico(isin, periodo="3M", sessione=sess)
     punti = storico.punti
@@ -308,11 +308,11 @@ automaticamente metadati, storico e prezzo corrente.
         print(f"     Max periodo:  {max_p.massimo} ({max_p.data})")
 
         # Ultimi 5 giorni
-        print(f"\n     Ultimi 5 giorni:")
+        print("\n     Ultimi 5 giorni:")
         print(f"     {'Data':<12} {'Apertura':>10} {'Max':>10} {'Min':>10} {'Chiusura':>10} {'Volume':>12}")
         for p in punti[-5:]:
             print(
-                f"     {str(p.data):<12} {p.apertura:>10} {p.massimo:>10} "
+                f"     {p.data!s:<12} {p.apertura:>10} {p.massimo:>10} "
                 f"{p.minimo:>10} {p.chiusura:>10} {p.volume:>12,}"
             )
 
