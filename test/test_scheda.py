@@ -182,18 +182,20 @@ class TestProfiloSocieta:
         profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
         assert profilo.indirizzo is not None
         assert isinstance(profilo.indirizzo, IndirizzoSocieta)
-        assert any((
-            profilo.indirizzo.ragione_sociale,
-            profilo.indirizzo.via,
-            profilo.indirizzo.cap,
-            profilo.indirizzo.comune,
-            profilo.indirizzo.paese,
-        ))
+        assert any(
+            (
+                profilo.indirizzo.ragione_sociale,
+                profilo.indirizzo.via,
+                profilo.indirizzo.cap,
+                profilo.indirizzo.comune,
+                profilo.indirizzo.paese,
+            )
+        )
 
     def test_contatti(self, sessione: Sessione, lingua: str) -> None:
         profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
         assert isinstance(profilo.contatti, ContattiSocieta)
-        assert any((profilo.contatti.telefono,profilo.contatti.sito_web))
+        assert any((profilo.contatti.telefono, profilo.contatti.sito_web))
 
     def test_metadati(self, sessione: Sessione, lingua: str) -> None:
         profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)

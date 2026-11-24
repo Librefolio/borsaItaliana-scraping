@@ -24,7 +24,7 @@ from .tipi import (
 _URL_SCHEDA = "https://www.borsaitaliana.it/borsa/search/scheda.html"
 
 # URL dati completi
-_URL_DATI_COMPLETI_BOND = "https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/" "dati-completi.html"
+_URL_DATI_COMPLETI_BOND = "https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/dati-completi.html"
 _URL_DATI_COMPLETI_AZIONE = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html"
 
 
@@ -965,7 +965,8 @@ def _arricchisci_azione(
 # ------------------------------------------------------------------
 
 
-_URL_PROFILO_SOCIETA = ("https://www.borsaitaliana.it/borsa/azioni/profilo-societa-dettaglio.html")
+_URL_PROFILO_SOCIETA = "https://www.borsaitaliana.it/borsa/azioni/profilo-societa-dettaglio.html"
+
 
 def _trova_articolo_sezione(
     soup: BeautifulSoup,
@@ -973,15 +974,10 @@ def _trova_articolo_sezione(
 ) -> Tag | None:
     """Individua l'articolo corrispondente a una sezione del profilo."""
 
-    intestazioni_normalizzate = {
-        _pulisci_testo(t).casefold()
-        for t in intestazioni
-    }
+    intestazioni_normalizzate = {_pulisci_testo(t).casefold() for t in intestazioni}
 
     for titolo in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
-        testo = _pulisci_testo(
-            titolo.get_text(" ", strip=True)
-        ).casefold()
+        testo = _pulisci_testo(titolo.get_text(" ", strip=True)).casefold()
 
         if testo in intestazioni_normalizzate:
             articolo = titolo.find_parent("article")
@@ -990,6 +986,7 @@ def _trova_articolo_sezione(
                 return articolo
 
     return None
+
 
 def _testo_cella(cella: Tag) -> str:
     """Estrae il testo di una cella, normalizzando spazi e ritorni a capo."""
@@ -1052,9 +1049,7 @@ def _estrai_descrizione_profilo(soup: BeautifulSoup) -> str | None:
         return None
 
     contenitore = ambito.find(
-        lambda tag: isinstance(tag, Tag)
-        and tag.name == "div"
-        and "h-bg--white" in (tag.get("class") or [])
+        lambda tag: isinstance(tag, Tag) and tag.name == "div" and "h-bg--white" in (tag.get("class") or [])
     )
     if contenitore is None:
         contenitore = ambito
@@ -1078,15 +1073,17 @@ def _estrai_descrizione_profilo(soup: BeautifulSoup) -> str | None:
         if elemento.name in {"table", "h1", "h2", "h3", "h4", "h5", "h6"}:
             break
         if elemento.name == "span" and elemento.find_parent("table") is None:
-            testo = _pulisci_testo(" ".join(
-                str(n).strip() for n in elemento.find_all(string=True)
-                if str(n).strip() and n.find_parent("p") is None
-            ))
+            testo = _pulisci_testo(
+                " ".join(
+                    str(n).strip()
+                    for n in elemento.find_all(string=True)
+                    if str(n).strip() and n.find_parent("p") is None
+                )
+            )
             if testo:
                 parti.append(testo)
                 break
     return " ".join(parti) or None
-
 
 
 def _estrai_metadati_fonte(
@@ -1102,16 +1099,14 @@ def _estrai_metadati_fonte(
 
     Supporta date ISO, numeriche e testuali inglesi.
     """
-    testo = _pulisci_testo(
-        contenitore.get_text(" ", strip=True)
-    )
+    testo = _pulisci_testo(contenitore.get_text(" ", strip=True))
 
     fonte: str | None = None
     aggiornamento: date | None = None
     etichetta_fonte = r"(?:Fonte|Source)"
     etichetta_data = r"(?:Ultimo aggiornamento|Last update)"
 
-    match_fonte = re.search(rf"{etichetta_fonte}\s*:?\s*(.*?)"rf"(?=\s*{etichetta_data}\s*:|$)",testo,re.IGNORECASE)
+    match_fonte = re.search(rf"{etichetta_fonte}\s*:?\s*(.*?)" rf"(?=\s*{etichetta_data}\s*:|$)", testo, re.IGNORECASE)
 
     if match_fonte:
         fonte = match_fonte.group(1).strip(" :-–,")
@@ -1124,7 +1119,7 @@ def _estrai_metadati_fonte(
         r"|\d{1,2}\s+[A-Z][a-z]+\s+\d{4}"
     )
 
-    match_data = re.search(rf"{etichetta_data}\s*:?\s*({pattern_data})",testo,re.IGNORECASE)
+    match_data = re.search(rf"{etichetta_data}\s*:?\s*({pattern_data})", testo, re.IGNORECASE)
 
     if match_data:
         raw_data = match_data.group(1).strip()
@@ -1144,7 +1139,6 @@ def _estrai_metadati_fonte(
     return fonte, aggiornamento
 
 
-
 def _estrai_indirizzo_e_contatti(
     articolo_indirizzo: Tag | None,
     articolo_contatti: Tag | None,
@@ -1159,47 +1153,43 @@ def _estrai_indirizzo_e_contatti(
     cap = None
     comune = None
     paese = None
-    
+
     # INDIRIZZO
     if articolo_indirizzo is not None:
-
         contenitore = articolo_indirizzo.find("div", class_=lambda c: c and "h-bg--white" in c)
 
         if contenitore is not None:
-
             # Ragione sociale: normalmente è nell'h3 interno.
             intestazione = contenitore.find("h3")
 
             if intestazione is not None:
-                ragione_sociale = _pulisci_testo(
-                    intestazione.get_text(" ", strip=True)
-                ) or None
+                ragione_sociale = _pulisci_testo(intestazione.get_text(" ", strip=True)) or None
 
             # Telefono dal link tel:
-            link_tel = contenitore.find(
-                "a",
-                href=re.compile(r"^tel:", re.IGNORECASE)
-            )
+            link_tel = contenitore.find("a", href=re.compile(r"^tel:", re.IGNORECASE))
 
             if link_tel is not None:
-                telefono = _pulisci_testo(
-                    link_tel.get_text(" ", strip=True)
-                ) or str(link_tel.get("href", "")).removeprefix("tel:")
+                telefono = _pulisci_testo(link_tel.get_text(" ", strip=True)) or str(
+                    link_tel.get("href", "")
+                ).removeprefix("tel:")
 
             # Sito web: primo link esterno.
             for link in contenitore.find_all("a", href=True):
-
                 href = str(link["href"]).strip()
 
                 if not href.lower().startswith(("http://", "https://")):
                     continue
 
-                dominio = re.sub(
-                    r"^https?://",
-                    "",
-                    href,
-                    flags=re.IGNORECASE,
-                ).split("/")[0].lower()
+                dominio = (
+                    re.sub(
+                        r"^https?://",
+                        "",
+                        href,
+                        flags=re.IGNORECASE,
+                    )
+                    .split("/")[0]
+                    .lower()
+                )
 
                 if dominio not in {
                     "borsaitaliana.it",
@@ -1211,18 +1201,13 @@ def _estrai_indirizzo_e_contatti(
                     break
 
             # Estrazione delle righe dell'indirizzo.
-            righe = [
-                _pulisci_testo(x)
-                for x in contenitore.stripped_strings
-                if _pulisci_testo(x)
-            ]
+            righe = [_pulisci_testo(x) for x in contenitore.stripped_strings if _pulisci_testo(x)]
 
             # Escludiamo intestazione, ragione sociale,
             # telefono e URL.
             righe_indirizzo = []
 
             for riga in righe:
-
                 if ragione_sociale and riga == ragione_sociale:
                     continue
 
@@ -1247,7 +1232,6 @@ def _estrai_indirizzo_e_contatti(
 
             # Individuazione CAP e prefisso internazionale.
             for indice, riga in enumerate(righe_indirizzo):
-
                 match = re.search(
                     r"\b(?:[A-Z]{2}[- ]?)?(\d{5})\b",
                     riga,
@@ -1259,7 +1243,7 @@ def _estrai_indirizzo_e_contatti(
 
                     # Eventuale comune sulla stessa riga del CAP
                     # («IT-00198 Roma»).
-                    resto = (riga[:match.start()] + riga[match.end():]).strip(" ,-")
+                    resto = (riga[: match.start()] + riga[match.end() :]).strip(" ,-")
                     indice_comune = indice
                     if resto:
                         comune = resto
@@ -1298,19 +1282,18 @@ def _estrai_indirizzo_e_contatti(
 
     # CONTATTI
     if articolo_contatti is not None:
-
-        contenitore = articolo_contatti.find("div",class_=lambda c: c and "h-bg--white" in c)
+        contenitore = articolo_contatti.find("div", class_=lambda c: c and "h-bg--white" in c)
         if contenitore is not None:
-            link_email = contenitore.find("a",href=re.compile(r"^mailto:", re.IGNORECASE))
+            link_email = contenitore.find("a", href=re.compile(r"^mailto:", re.IGNORECASE))
             if link_email is not None:
                 email = str(link_email.get("href", "")).removeprefix("mailto:").strip()
 
     indirizzo = None
 
     if any((ragione_sociale, via, cap, comune, paese)):
-        indirizzo = IndirizzoSocieta(ragione_sociale=ragione_sociale,via=via,cap=cap,comune=comune,paese=paese)
+        indirizzo = IndirizzoSocieta(ragione_sociale=ragione_sociale, via=via, cap=cap, comune=comune, paese=paese)
 
-    contatti = ContattiSocieta(telefono=telefono,email=email,sito_web=sito_web)
+    contatti = ContattiSocieta(telefono=telefono, email=email, sito_web=sito_web)
 
     return indirizzo, contatti
 
@@ -1407,14 +1390,8 @@ def _estrai_tabelle_profilo(
 
         return bool(
             valori
-            and any(
-                valore in parole_intestazione_azionisti
-                for valore in valori
-            )
-            and not any(
-                re.search(r"\d", valore)
-                for valore in valori
-            )
+            and any(valore in parole_intestazione_azionisti for valore in valori)
+            and not any(re.search(r"\d", valore) for valore in valori)
         )
 
     def e_riga_percentuale(riga: list[str]) -> bool:
@@ -1443,22 +1420,18 @@ def _estrai_tabelle_profilo(
 
         # Individuazione della tabella azionariato
         contenitore_azionariato = tabella.find_parent(
-            lambda tag: isinstance(tag, Tag)
-            and tag.name in {"div", "section", "article"}
-            and any(
-                parola in _pulisci_testo(
-                    tag.get_text(" ", strip=True)
-                ).casefold()
-                for parola in parole_azionariato
+            lambda tag: (
+                isinstance(tag, Tag)
+                and tag.name in {"div", "section", "article"}
+                and any(
+                    parola in _pulisci_testo(tag.get_text(" ", strip=True)).casefold() for parola in parole_azionariato
+                )
             )
         )
 
         azionariato_esplicito = contenitore_azionariato is not None
 
-        contiene_parole_azionariato = any(
-            parola in testo_tabella
-            for parola in parole_azionariato
-        )
+        contiene_parole_azionariato = any(parola in testo_tabella for parola in parole_azionariato)
 
         # Tabella dei dati societari
         colonne_anni: list[tuple[int, int]] = []
@@ -1475,7 +1448,7 @@ def _estrai_tabelle_profilo(
                 reverse=True,
             )
 
-            anni = sorted(set(anni).union(anni_tabella),reverse=True)
+            anni = sorted(set(anni).union(anni_tabella), reverse=True)
 
             for riga in righe[1:]:
                 if len(riga) < 2:
@@ -1492,7 +1465,7 @@ def _estrai_tabelle_profilo(
                     raw = riga[indice] if indice < len(riga) else ""
                     valori[anno] = _valore_profilo(raw, lingua)
 
-                dati.append(DatoSocietario(voce=voce,valori=valori))
+                dati.append(DatoSocietario(voce=voce, valori=valori))
 
             continue
 
@@ -1510,13 +1483,7 @@ def _estrai_tabelle_profilo(
             if e_riga_percentuale(riga):
                 righe_azionisti.append(riga)
 
-        if (
-            righe_azionisti
-            and (
-                azionariato_esplicito
-                or contiene_parole_azionariato
-            )
-        ):
+        if righe_azionisti and (azionariato_esplicito or contiene_parole_azionariato):
             for riga in righe_azionisti:
                 nome = riga[0].strip()
                 raw_percentuale = riga[-1].strip()
@@ -1538,15 +1505,12 @@ def _estrai_tabelle_profilo(
                 if not Decimal(0) <= percentuale <= Decimal(100):
                     continue
 
-                azionisti.append(Azionista(nome,percentuale))
+                azionisti.append(Azionista(nome, percentuale))
 
             continue
 
         # Tabella dirigenti
-        contiene_parole_dirigenti = any(
-            parola in testo_tabella
-            for parola in parole_dirigenti
-        )
+        contiene_parole_dirigenti = any(parola in testo_tabella for parola in parole_dirigenti)
 
         if contiene_parole_dirigenti:
             for riga in righe:
@@ -1559,10 +1523,7 @@ def _estrai_tabelle_profilo(
                 ruolo_norm = normalizza(ruolo)
                 nominativo_norm = normalizza(nominativo)
 
-                if (
-                    ruolo_norm in parole_intestazione_dirigenti
-                    or nominativo_norm in parole_intestazione_dirigenti
-                ):
+                if ruolo_norm in parole_intestazione_dirigenti or nominativo_norm in parole_intestazione_dirigenti:
                     continue
 
                 if not ruolo or not nominativo:
@@ -1572,10 +1533,9 @@ def _estrai_tabelle_profilo(
                 if re.search(r"\d+\s*%", nominativo):
                     continue
 
-                dirigenti.append(Dirigente(ruolo,nominativo))
+                dirigenti.append(Dirigente(ruolo, nominativo))
 
     return dirigenti, anni, dati, azionisti
-
 
 
 def ottieni_profilo_societa(
@@ -1618,7 +1578,7 @@ def ottieni_profilo_societa(
 
     try:
         if mic is None:
-            _, url_finale = sessione.get_html_con_url(_URL_SCHEDA,params={"code": isin, "lang": lingua})
+            _, url_finale = sessione.get_html_con_url(_URL_SCHEDA, params={"code": isin, "lang": lingua})
 
             match_mic = re.search(
                 rf"/{re.escape(isin)}-([A-Z0-9]{{4}})\.html(?:$|[?#])",
@@ -1649,9 +1609,9 @@ def ottieni_profilo_societa(
         ):
             raise StrumentoNonTrovato(f"Profilo società non trovato per ISIN '{isin}' e MIC '{mic}'")
 
-        articolo_profilo = _trova_articolo_sezione(soup,("Profilo società", "Profilo societa", "Company profile"))
+        articolo_profilo = _trova_articolo_sezione(soup, ("Profilo società", "Profilo societa", "Company profile"))
         articolo_indirizzo = _trova_articolo_sezione(soup, ("Indirizzo", "Address"))
-        articolo_contatti = _trova_articolo_sezione(soup,("Contatti", "Contacts", "Contact"))
+        articolo_contatti = _trova_articolo_sezione(soup, ("Contatti", "Contacts", "Contact"))
 
         if articolo_profilo is None:
             raise StrumentoNonTrovato(f"Sezione Profilo Società non trovata per ISIN '{isin}' e MIC '{mic}'")
@@ -1661,17 +1621,19 @@ def ottieni_profilo_societa(
         indirizzo, contatti = _estrai_indirizzo_e_contatti(articolo_indirizzo, articolo_contatti)
         fonte, aggiornamento = _estrai_metadati_fonte(articolo_profilo)
 
-        if not any((
-            descrizione,
-            dirigenti,
-            anni,
-            dati,
-            azionisti,
-            indirizzo,
-            contatti.telefono,
-            contatti.email,
-            contatti.sito_web,
-        )):
+        if not any(
+            (
+                descrizione,
+                dirigenti,
+                anni,
+                dati,
+                azionisti,
+                indirizzo,
+                contatti.telefono,
+                contatti.email,
+                contatti.sito_web,
+            )
+        ):
             raise StrumentoNonTrovato(f"Nessun dato del Profilo Società disponibile per ISIN '{isin}' e MIC '{mic}'")
 
         return ProfiloSocieta(
