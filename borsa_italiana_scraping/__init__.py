@@ -18,7 +18,15 @@ from .fondi import (
     ottieni_dati_fondo,
     ottieni_dati_fondo_da_url,
 )
-from .lista import lista_btp
+from .lista import (
+    lista_bot,
+    lista_btp,
+    lista_cct,
+    lista_ctz,
+    lista_domestic_mot,
+    lista_euro_mot,
+    lista_green_and_social,
+)
 from .ricerca import cerca
 from .scheda import ottieni_profilo_societa, ottieni_scheda
 from .sessione import Sessione
@@ -38,6 +46,7 @@ from .tipi import (
     RisultatoRicerca,
     SchedaStrumento,
     StoricoRisultato,
+    StrumentoGreenSocial,
     StrumentoLista,
 )
 
@@ -64,12 +73,19 @@ __all__ = [
     "SchedaStrumento",
     "Sessione",
     "StoricoRisultato",
+    "StrumentoGreenSocial",
     "StrumentoLista",
     "StrumentoNonRisolto",
     "StrumentoNonTrovato",
     "cerca",
     "estrai_codice_da_url",
+    "lista_bot",
     "lista_btp",
+    "lista_cct",
+    "lista_ctz",
+    "lista_domestic_mot",
+    "lista_euro_mot",
+    "lista_green_and_social",
     "ottieni_dati_fondo",
     "ottieni_dati_fondo_da_url",
     "ottieni_intraday",

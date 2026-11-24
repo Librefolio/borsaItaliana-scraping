@@ -14,7 +14,17 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from borsa_italiana_scraping import DatiNonDisponibili, lista_btp
+from borsa_italiana_scraping import (
+    DatiNonDisponibili,
+    Sessione,
+    lista_bot,
+    lista_btp,
+    lista_cct,
+    lista_ctz,
+    lista_domestic_mot,
+    lista_euro_mot,
+    lista_green_and_social,
+)
 from borsa_italiana_scraping import lista as lista_mod
 
 _FIXTURES = Path(__file__).parent / "fixtures"
@@ -113,13 +123,20 @@ def test_si_ferma_se_una_pagina_ripete_la_precedente() -> None:
     assert len(s.richieste) == 2
 
 
-def test_limite_massimo_di_pagine() -> None:
+def test_limite_massimo_di_pagine_meno_pagine_richieste() -> None:
     s = FakeSessione({1: _pagina(1), 2: _pagina(2)})
+    with pytest.raises(
+        DatiNonDisponibili,
+        match="Limite di 1 pagine raggiunto",
+    ):
+        lista_btp(lingua="en", sessione=s, pausa_tra_pagine=0, max_pagine=1)
 
-    risultati = lista_btp(lingua="en", sessione=s, max_pagine=1)
 
-    assert [r.isin for r in risultati] == _ISIN_P1
-    assert len(s.richieste) == 1
+def test_limite_massimo_di_pagine_piu_pagine_richieste() -> None:
+    s = FakeSessione({1: _pagina(1), 2: _pagina(2)})
+    risultati = lista_btp(lingua="en", sessione=s, max_pagine=3)
+    assert [r.isin for r in risultati] == _ISIN_P1 + _ISIN_P2
+    assert len(s.richieste) == 2
 
 
 def test_pausa_configurabile(niente_pause: list[float]) -> None:
@@ -143,3 +160,115 @@ def test_pagina_successiva_senza_tabella_non_restituisce_lista_incompleta() -> N
 
     with pytest.raises(DatiNonDisponibili, match="pagina 2"):
         lista_btp(lingua="en", sessione=s)
+
+
+@pytest.mark.parametrize(("lingua", "isin_atteso"), [("en", "IT0005596637"), ("it", "IT0005580052")])
+def test_lista_domestic_mot(lingua: str, isin_atteso: str) -> None:
+    html = (_FIXTURES / f"lista_domestic_mot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_domestic_mot(lingua=lingua, sessione=s)
+
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize(("lingua", "isin_atteso"), [("en", "AT0000383864"), ("it", "AT0000A04967")])
+def test_lista_euro_mot(lingua: str, isin_atteso: str) -> None:
+    html = (_FIXTURES / f"lista_euro_mot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_euro_mot(lingua=lingua, sessione=s)
+
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize(("lingua", "isin_atteso"), [("en", "IT0005695256"), ("it", "IT0005695256")])
+def test_lista_bot(lingua: str, isin_atteso: str) -> None:
+    html = (_FIXTURES / f"lista_bot_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_bot(lingua=lingua, sessione=s)
+
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize("lingua", ["en", "it"])
+def test_lista_ctz(lingua: str) -> None:
+    html = (_FIXTURES / f"lista_ctz_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+
+    risultati = lista_ctz(lingua=lingua, sessione=s)
+
+    # A novembre 2026 nessun CTZ è quotato: la pagina salvata ha la tabella senza righe.
+    assert risultati == []
+    assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.integration
+def test_lista_ctz_reale_ancora_vuota() -> None:
+    """Sentinella: fallisce il giorno in cui su Borsa Italiana tornano i CTZ.
+
+    Il test offline qui sopra conosce solo la pagina vuota. Quando questo test diventa
+    rosso, salvare la pagina nuova in test/fixtures/lista_ctz_{en,it}.html, controllare
+    un ISIN atteso come per le altre liste ed eliminare questa sentinella.
+    """
+    with Sessione() as sessione:
+        risultati = lista_ctz(lingua="it", sessione=sessione)
+
+    assert risultati == [], (
+        f"I CTZ sono tornati in lista ({len(risultati)} righe, es. {risultati[0].isin}): "
+        "aggiornare le fixture lista_ctz e il test con un ISIN reale"
+    )
+
+
+@pytest.mark.parametrize(("lingua", "isin_atteso"), [("en", "IT0005534984"), ("it", "IT0005534984")])
+def test_lista_cct(lingua: str, isin_atteso: str) -> None:
+    html = (_FIXTURES / f"lista_cct_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_cct(lingua=lingua, sessione=s)
+
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+
+
+@pytest.mark.parametrize(
+    ("lingua", "isin_atteso", "emittente_atteso", "tipologia_attesa"),
+    [
+        ("en", "AT0000A33SH3", "REPUBLIC OF AUSTRIA", "ESG Green / Environmental"),
+        ("it", "AU3CB0277077", "European Investment Bank", "ESG Green / Environmental"),
+    ],
+)
+def test_lista_green_and_social(lingua: str, isin_atteso: str, emittente_atteso: str, tipologia_attesa: str) -> None:
+    html = (_FIXTURES / f"lista_green_and_social_{lingua}.html").read_text(encoding="utf-8")
+    s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_green_and_social(lingua=lingua, sessione=s)
+
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+    assert titolo.emittente == emittente_atteso
+    assert titolo.tipologia_emissione == tipologia_attesa

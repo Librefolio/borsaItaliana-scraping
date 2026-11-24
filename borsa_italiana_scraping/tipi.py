@@ -243,3 +243,19 @@ class ProfiloSocieta:
     fonte: str | None = None
     ultimo_aggiornamento: date | None = None
     url_pagina: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StrumentoGreenSocial:
+    """Strumento presente nella lista Green & Social Bond.
+
+    Il modello è distinto da StrumentoLista perché questa lista espone
+    informazioni descrittive (emittente e tipologia di emissione) e non
+    necessariamente prezzo, cedola e scadenza.
+    """
+
+    isin: str
+    nome: str
+    mic: str
+    emittente: str | None = None
+    tipologia_emissione: str | None = None
