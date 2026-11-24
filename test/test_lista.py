@@ -155,47 +155,58 @@ def test_pagina_successiva_senza_tabella_non_restituisce_lista_incompleta() -> N
         lista_btp(lingua="en", sessione=s)
 
 
-@pytest.mark.parametrize("lingua", ["en", "it"])
-def test_lista_domestic_mot(lingua: str) -> None:
+@pytest.mark.parametrize(("lingua", "isin_atteso"),
+                         [("en", "IT0005596637"),
+                          ("it", "IT0005580052")]
+                          )
+def test_lista_domestic_mot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_domestic_mot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
+    risultati = lista_domestic_mot(lingua=lingua, sessione=s)
 
-    risultati = lista_domestic_mot(lingua="en", sessione=s)
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
 
-    numero_risultati = len(risultati) > 0
-    if numero_risultati > 0 :
-        assert all(r.isin for r in risultati)
-        assert len({r.isin for r in risultati}) == len(risultati)
-        assert s.richieste[0] == {"lang": "en"}
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
 
 
 
-@pytest.mark.parametrize("lingua", ["en", "it"])
-def test_lista_euro_mot(lingua: str) -> None:
+@pytest.mark.parametrize(("lingua", "isin_atteso"),
+                         [("en", "AT0000383864"),
+                          ("it", "AT0000A04967")
+                          ],)
+def test_lista_euro_mot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_euro_mot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
-
     risultati = lista_euro_mot(lingua=lingua, sessione=s)
 
-    numero_risultati = len(risultati) > 0
-    if numero_risultati:
-        assert all(r.isin for r in risultati)
-        assert len({r.isin for r in risultati}) == len(risultati)
-        assert s.richieste[0] == {"lang": lingua}
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
 
 
-@pytest.mark.parametrize("lingua", ["en", "it"])
-def test_lista_bot(lingua: str) -> None:
+@pytest.mark.parametrize(("lingua", "isin_atteso"),
+                         [("en", "IT0005695256"),
+                          ("it", "IT0005695256")],)
+def test_lista_bot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_bot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
-
     risultati = lista_bot(lingua=lingua, sessione=s)
 
-    numero_risultati = len(risultati) > 0
-    if numero_risultati:
-        assert all(r.isin for r in risultati)
-        assert len({r.isin for r in risultati}) == len(risultati)
-        assert s.richieste[0] == {"lang": lingua}
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
 
 
 @pytest.mark.parametrize("lingua", ["en", "it"])
@@ -212,29 +223,37 @@ def test_lista_ctz(lingua: str) -> None:
         assert s.richieste[0] == {"lang": lingua}
 
 
-@pytest.mark.parametrize("lingua", ["en", "it"])
-def test_lista_cct(lingua: str) -> None:
+@pytest.mark.parametrize(("lingua", "isin_atteso"),
+                         [("en", "IT0005534984"),
+                          ("it", "IT0005534984")])
+def test_lista_cct(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_cct_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
-
     risultati = lista_cct(lingua=lingua, sessione=s)
 
-    numero_risultati = len(risultati) > 0
-    if numero_risultati:
-        assert all(r.isin for r in risultati)
-        assert len({r.isin for r in risultati}) == len(risultati)
-        assert s.richieste[0] == {"lang": lingua}
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
 
 
-@pytest.mark.parametrize("lingua", ["en", "it"])
-def test_lista_green_and_social(lingua: str) -> None:
+@pytest.mark.parametrize(("lingua", "isin_atteso", "emittente_atteso", "tipologia_attesa"),
+                         [("en", "AT0000A33SH3", "REPUBLIC OF AUSTRIA", "ESG Green / Environmental"),
+                          ("it", "AU3CB0277077", "European Investment Bank", "ESG Green / Environmental")])
+def test_lista_green_and_social(lingua: str,isin_atteso: str,emittente_atteso :str, tipologia_attesa: str) -> None:
     html = (_FIXTURES / f"lista_green_and_social_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
-
     risultati = lista_green_and_social(lingua=lingua, sessione=s)
 
-    numero_risultati = len(risultati) > 0
-    if numero_risultati:
-        assert all(r.isin for r in risultati)
-        assert len({r.isin for r in risultati}) == len(risultati)
-        assert s.richieste[0] == {"lang": lingua}
+    assert risultati
+    assert all(r.isin for r in risultati)
+    assert len({r.isin for r in risultati}) == len(risultati)
+
+    titolo = next(r for r in risultati if r.isin == isin_atteso)
+    assert titolo.isin == isin_atteso
+    assert s.richieste[0] == {"lang": lingua}
+    assert titolo.emittente == emittente_atteso
+    assert titolo.tipologia_emissione == tipologia_attesa
