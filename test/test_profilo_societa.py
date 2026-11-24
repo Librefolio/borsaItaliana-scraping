@@ -177,6 +177,7 @@ class TestProfiloSocietaOffline:
         assert indirizzo.via == "Viale Regina Margherita 137"
         assert indirizzo.cap == "00198"
         assert indirizzo.comune == "Roma"
+        assert indirizzo.paese == "Italy"  # not the "Source:" or "Phone number:" line that follows
 
     def test_contatti(self, lingua: str) -> None:
         contatti = _profilo(lingua).contatti
@@ -207,6 +208,7 @@ def test_stessi_dati_in_entrambe_le_lingue() -> None:
     assert [d.nominativo for d in it.dirigenti] == [d.nominativo for d in en.dirigenti]
     assert _valori_non_testuali(it) == _valori_non_testuali(en)
     assert [a.percentuale for a in it.azionisti] == [a.percentuale for a in en.azionisti]
+    assert it.indirizzo == en.indirizzo
     assert it.contatti == en.contatti
     assert (it.fonte, it.ultimo_aggiornamento) == (en.fonte, en.ultimo_aggiornamento)
 

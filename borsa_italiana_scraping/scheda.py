@@ -1237,6 +1237,10 @@ def _estrai_indirizzo_e_contatti(
                 if re.match(r"^https?://", riga, re.I):
                     continue
 
+                # Source / last-update note under the address block.
+                if re.match(r"^(fonte|source)\s*:", riga, re.I):
+                    continue
+
                 if riga == (link_tel.get_text(" ", strip=True) if link_tel else None):
                     continue
 
@@ -1254,23 +1258,22 @@ def _estrai_indirizzo_e_contatti(
                 if match:
                     cap = match.group(1)
 
-                    # Eventuale comune sulla stessa riga.
+                    # Eventuale comune sulla stessa riga del CAP
+                    # («IT-00198 Roma»).
                     resto = (riga[:match.start()] + riga[match.end():]).strip(" ,-")
+                    indice_comune = indice
                     if resto:
                         comune = resto
 
-                    # La riga successiva normalmente contiene
-                    # il comune.
+                    # Altrimenti la riga successiva contiene il comune.
                     if comune is None and indice + 1 < len(righe_indirizzo):
-                        comune = righe_indirizzo[indice + 1]
+                        indice_comune = indice + 1
+                        comune = righe_indirizzo[indice_comune]
 
-                    # La riga successiva al comune contiene
+                    # La riga successiva a quella del comune contiene
                     # normalmente il paese.
-                    if (
-                        comune is not None
-                        and indice + 2 < len(righe_indirizzo)
-                    ):
-                        paese = righe_indirizzo[indice + 2]
+                    if comune is not None and indice_comune + 1 < len(righe_indirizzo):
+                        paese = righe_indirizzo[indice_comune + 1]
 
                     break
 
