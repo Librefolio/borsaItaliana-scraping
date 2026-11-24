@@ -13,10 +13,7 @@ from .tipi import PuntoStorico, StoricoRisultato
 _PERIODI_VALIDI = {"1M", "3M", "6M", "1Y", "3Y", "5Y", "MAX"}
 
 # URL base API storico
-_URL_STORICO = (
-    "https://grafici.borsaitaliana.it/api/instruments/"
-    "{isin},{exchange},ISIN/history/period"
-)
+_URL_STORICO = "https://grafici.borsaitaliana.it/api/instruments/{isin},{exchange},ISIN/history/period"
 
 
 def _parsa_data(dt_str: str) -> date:
@@ -80,14 +77,10 @@ def _scarica_storico(
     punti_raw = history.get("historyDt")
 
     if not transco or not transco.get("code"):
-        raise StrumentoNonTrovato(
-            f"ISIN '{isin}' non riconosciuto dall'API di Borsa Italiana (exchange {exchange})"
-        )
+        raise StrumentoNonTrovato(f"ISIN '{isin}' non riconosciuto dall'API di Borsa Italiana (exchange {exchange})")
 
     if punti_raw is None or len(punti_raw) == 0:
-        raise DatiNonDisponibili(
-            f"Nessun dato storico disponibile per '{isin}' nel periodo '{periodo}'"
-        )
+        raise DatiNonDisponibili(f"Nessun dato storico disponibile per '{isin}' nel periodo '{periodo}'")
 
     codice_borsa = transco.get("exchCode", exchange)
     punti = [_parsa_punto(p) for p in punti_raw]
@@ -155,9 +148,7 @@ def ottieni_storico(
     """
     periodo = periodo.upper()
     if periodo not in _PERIODI_VALIDI:
-        raise ValueError(
-            f"Periodo '{periodo}' non valido. Usa uno tra: {', '.join(sorted(_PERIODI_VALIDI))}"
-        )
+        raise ValueError(f"Periodo '{periodo}' non valido. Usa uno tra: {', '.join(sorted(_PERIODI_VALIDI))}")
 
     isin = isin.strip().upper()
 
@@ -189,14 +180,10 @@ def ottieni_storico(
         try:
             _scarica_storico(isin, "MAX", "XMIL", aggiustato, False, sessione)
         except (StrumentoNonTrovato, ErroreConnessione):
-            raise StrumentoNonTrovato(
-                f"ISIN '{isin}' non riconosciuto dall'API di Borsa Italiana"
-            ) from None
+            raise StrumentoNonTrovato(f"ISIN '{isin}' non riconosciuto dall'API di Borsa Italiana") from None
         except DatiNonDisponibili:
             pass  # noto a XMIL, senza serie MAX: comunque riconosciuto
-        raise DatiNonDisponibili(
-            f"Nessun dato storico disponibile per '{isin}' nel periodo '{periodo}'"
-        )
+        raise DatiNonDisponibili(f"Nessun dato storico disponibile per '{isin}' nel periodo '{periodo}'")
 
     finally:
         if sessione_locale:

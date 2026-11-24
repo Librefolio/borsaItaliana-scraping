@@ -110,9 +110,9 @@ for r in risultati[:5]:
 
 ```python
 sessione = Sessione(
-    timeout=30.0,        # timeout per richiesta (secondi)
-    max_tentativi=3,     # retry in caso di errore
-    pausa_minima=0.5,    # secondi tra richieste consecutive
+    timeout=30.0,  # timeout per richiesta (secondi)
+    max_tentativi=3,  # retry in caso di errore
+    pausa_minima=0.5,  # secondi tra richieste consecutive
 )
 ```
 

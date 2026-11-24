@@ -71,8 +71,10 @@ Periodi: 1M, 3M, 6M, 1Y, 3Y, 5Y, MAX
     print()
     print("     Ultimi 5 giorni:")
     for p in storico.punti[-5:]:
-        print(f"       {p.data}  O={p.apertura:>8}  H={p.massimo:>8}  "
-              f"L={p.minimo:>8}  C={p.chiusura:>8}  V={p.volume:>12,}")
+        print(
+            f"       {p.data}  O={p.apertura:>8}  H={p.massimo:>8}  "
+            f"L={p.minimo:>8}  C={p.chiusura:>8}  V={p.volume:>12,}"
+        )
 
     print()
 
@@ -103,8 +105,7 @@ Risoluzioni: 1MN, 5MN, 15MN, 30MN, 1H
         if intraday.punti:
             print("     Ultime 3:")
             for p in intraday.punti[-3:]:
-                print(f"       {p.orario.strftime('%H:%M')}  "
-                      f"O={p.apertura:>8}  C={p.chiusura:>8}  V={p.volume:>10,}")
+                print(f"       {p.orario.strftime('%H:%M')}  O={p.apertura:>8}  C={p.chiusura:>8}  V={p.volume:>10,}")
     except DatiNonDisponibili:
         print("  ⚠ Mercato chiuso — nessun dato intraday disponibile")
 
@@ -242,7 +243,7 @@ automaticamente metadati, storico e prezzo corrente.
 
     # Mostra tutti i risultati trovati
     print(f"  {'#':>3}  {'ISIN':<14} {'Nome':<35} {'Tipo':<18} {'Mercato'}")
-    print(f"  {'─'*3}  {'─'*14} {'─'*35} {'─'*18} {'─'*8}")
+    print(f"  {'─' * 3}  {'─' * 14} {'─' * 35} {'─' * 18} {'─' * 8}")
     for i, r in enumerate(risultati, 1):
         print(f"  {i:>3}  {r.isin:<14} {r.nome[:35]:<35} {r.tipo:<18} {r.mercato}")
 
@@ -297,8 +298,7 @@ automaticamente metadati, storico e prezzo corrente.
         print(f"     Range date:   {primo.data} → {ultimo.data}")
         print(f"     Apertura:     {primo.chiusura} {prezzo.valuta}")
         print(f"     Chiusura:     {ultimo.chiusura} {prezzo.valuta}")
-        print(f"     Δ 3M:         {'+' if delta >= 0 else ''}{delta} "
-              f"({'+' if delta_pct >= 0 else ''}{delta_pct}%)")
+        print(f"     Δ 3M:         {'+' if delta >= 0 else ''}{delta} ({'+' if delta_pct >= 0 else ''}{delta_pct}%)")
 
         # Min/max nel periodo
         min_p = min(punti, key=lambda p: p.minimo)
@@ -308,15 +308,16 @@ automaticamente metadati, storico e prezzo corrente.
 
         # Ultimi 5 giorni
         print(f"\n     Ultimi 5 giorni:")
-        print(f"     {'Data':<12} {'Apertura':>10} {'Max':>10} "
-              f"{'Min':>10} {'Chiusura':>10} {'Volume':>12}")
+        print(f"     {'Data':<12} {'Apertura':>10} {'Max':>10} {'Min':>10} {'Chiusura':>10} {'Volume':>12}")
         for p in punti[-5:]:
-            print(f"     {str(p.data):<12} {p.apertura:>10} {p.massimo:>10} "
-                  f"{p.minimo:>10} {p.chiusura:>10} {p.volume:>12,}")
+            print(
+                f"     {str(p.data):<12} {p.apertura:>10} {p.massimo:>10} "
+                f"{p.minimo:>10} {p.chiusura:>10} {p.volume:>12,}"
+            )
 
     # --- Riepilogo ---
     print(f"""
-  {'═' * 56}
+  {"═" * 56}
   ✅ Pipeline completata per {scelto.nome}
 
   Riepilogo del flusso:
@@ -328,7 +329,7 @@ automaticamente metadati, storico e prezzo corrente.
 
   Questo è il flusso tipico del plugin LibreFolio:
     search() → get_current_value() + get_history_value()
-  {'═' * 56}""")
+  {"═" * 56}""")
 
 
 def main() -> None:

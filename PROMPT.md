@@ -89,19 +89,19 @@ borsa-italiana-scraping/
 ```python
 def ottieni_storico(
     isin: str,
-    periodo: str = "1Y",       # 1M, 3M, 6M, 1Y, 3Y, 5Y, MAX
+    periodo: str = "1Y",  # 1M, 3M, 6M, 1Y, 3Y, 5Y, MAX
     aggiustato: bool = True,
     includi_ultimo: bool = True,
     sessione: Sessione | None = None,
 ) -> StoricoRisultato:
     """
     Scarica i dati storici OHLCV per un titolo identificato da ISIN.
-    
+
     Ritorna un oggetto StoricoRisultato con:
     - isin: str
     - codice_borsa: str (es. "XMIL")
     - punti: list[PuntoStorico]
-    
+
     Ogni PuntoStorico ha:
     - data: date
     - apertura: Decimal
@@ -157,16 +157,17 @@ def ottieni_intraday(
 ) -> IntradayRisultato:
     """Scarica i dati intraday della giornata corrente."""
 
+
 def ottieni_prezzo_corrente(
     isin: str,
     sessione: Sessione | None = None,
 ) -> PrezzoCorrente:
     """
     Ottiene il prezzo corrente di un titolo.
-    
+
     Strategia: usa l'endpoint storico con periodo 1M e prende l'ultimo punto.
     Fallback: scraping della pagina scheda.
-    
+
     Ritorna PrezzoCorrente con:
     - isin: str
     - prezzo: Decimal
@@ -212,13 +213,13 @@ def ottieni_prezzo_corrente(
 ```python
 def cerca(
     query: str,
-    lingua: str = "it",       # "it" o "en"
+    lingua: str = "it",  # "it" o "en"
     solo_strumenti: bool = True,  # filtra solo quotes[], ignora news/pages/docs
     sessione: Sessione | None = None,
 ) -> list[RisultatoRicerca]:
     """
     Cerca strumenti finanziari su Borsa Italiana.
-    
+
     Ogni RisultatoRicerca ha:
     - isin: str (dal campo 'symbol')
     - mic: str (es. "MOTX", "MTAA")
@@ -227,8 +228,8 @@ def cerca(
     - mercato: str (es. "MOT", "MTA")
     - comparto: str | None (es. "TITOLOSTATO")
     - sotto_comparto: str | None (es. "BTP")
-    
-    In caso di errore con l'API JSON (Cloudflare block), 
+
+    In caso di errore con l'API JSON (Cloudflare block),
     solleva RicercaNonDisponibile con messaggio esplicativo.
     """
 ```
@@ -275,13 +276,13 @@ Per **obbligazioni**:
 ```python
 def ottieni_scheda(
     isin: str,
-    mic: str | None = None,    # Se None, usa l'URL universale con redirect
+    mic: str | None = None,  # Se None, usa l'URL universale con redirect
     lingua: str = "en",
     sessione: Sessione | None = None,
 ) -> SchedaStrumento:
     """
     Scraping della pagina scheda di uno strumento.
-    
+
     Ritorna SchedaStrumento con:
     - isin: str
     - nome: str
@@ -290,7 +291,7 @@ def ottieni_scheda(
     - valuta: str (letta dalla pagina, es. "EUR")
     - tipo: str ("azione", "obbligazione", "etf", "altro")
     - mercato: str
-    
+
     # Campi specifici obbligazioni (None per azioni):
     - rendimento_lordo: Decimal | None
     - rendimento_netto: Decimal | None
@@ -304,7 +305,7 @@ def ottieni_scheda(
     - tipo_bond: str | None
     - lotto_minimo: int | None
     - descrizione_payout: str | None
-    
+
     # Campi specifici azioni (None per obbligazioni):
     - settore: str | None
     - capitalizzazione: Decimal | None
@@ -356,36 +357,35 @@ def lista_btp(
 class Sessione:
     """
     Gestisce la sessione HTTP verso Borsa Italiana.
-    
+
     - Mantiene i cookie tra le richieste (fondamentale per il WAF Imperva)
     - Esegue il "cookie warmup" automatico al primo utilizzo
     - Rispetta i rate limit con backoff esponenziale
     - Riutilizzabile per multiple chiamate
     """
-    
+
     def __init__(
         self,
         timeout: float = 30.0,
         max_tentativi: int = 3,
-        pausa_minima: float = 0.5,    # secondi tra richieste
-    ):
-        ...
-    
+        pausa_minima: float = 0.5,  # secondi tra richieste
+    ): ...
+
     def warmup(self) -> None:
         """
         Esegue il warmup dei cookie visitando una pagina del sito.
         Chiamato automaticamente alla prima richiesta se non già fatto.
         """
         ...
-    
+
     def get_json(self, url: str, params: dict | None = None) -> dict:
         """GET con parsing JSON automatico."""
         ...
-    
+
     def get_html(self, url: str, params: dict | None = None) -> BeautifulSoup:
         """GET con parsing HTML automatico (BeautifulSoup + lxml)."""
         ...
-    
+
     def chiudi(self) -> None:
         """Chiude la sessione HTTP."""
         ...
@@ -475,26 +475,37 @@ class StrumentoLista:
 ```python
 class BorsaItalianaErrore(Exception):
     """Errore base della libreria."""
+
     pass
+
 
 class StrumentoNonTrovato(BorsaItalianaErrore):
     """Lo strumento con l'ISIN specificato non è stato trovato."""
+
     pass
+
 
 class DatiNonDisponibili(BorsaItalianaErrore):
     """I dati richiesti non sono disponibili (periodo non supportato, mercato chiuso, ecc.)."""
+
     pass
+
 
 class ErroreConnessione(BorsaItalianaErrore):
     """Errore di rete o timeout."""
+
     pass
+
 
 class RateLimitRaggiunto(BorsaItalianaErrore):
     """Troppe richieste — il WAF ha bloccato la connessione."""
+
     pass
+
 
 class RicercaNonDisponibile(BorsaItalianaErrore):
     """La ricerca JSON non è disponibile (Cloudflare block). Suggerisce di usare lista_btp() ecc."""
+
     pass
 ```
 
@@ -505,6 +516,7 @@ class RicercaNonDisponibile(BorsaItalianaErrore):
 ### `esempio_storico.py`
 ```python
 """Esempio: scarica lo storico di ENEL (IT0003128367) per 1 anno."""
+
 from borsa_italiana_scraping import ottieni_storico, Sessione
 
 sessione = Sessione()
@@ -522,6 +534,7 @@ sessione.chiudi()
 ### `esempio_obbligazione.py`
 ```python
 """Esempio: storico + metadati del BTP Più (IT0005634800)."""
+
 from borsa_italiana_scraping import ottieni_storico, ottieni_scheda, Sessione
 
 sessione = Sessione()

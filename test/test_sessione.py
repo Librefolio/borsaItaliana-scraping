@@ -29,10 +29,7 @@ class TestSessione:
     def test_get_json(self) -> None:
         """get_json deve restituire un dizionario valido."""
         with Sessione() as sess:
-            url = (
-                "https://grafici.borsaitaliana.it/api/instruments/"
-                "IT0003128367,XMIL,ISIN/history/period"
-            )
+            url = "https://grafici.borsaitaliana.it/api/instruments/IT0003128367,XMIL,ISIN/history/period"
             dati = sess.get_json(url, params={"period": "1M"})
             assert isinstance(dati, dict)
             assert "transco" in dati

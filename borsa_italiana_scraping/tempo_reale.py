@@ -13,16 +13,10 @@ from .tipi import IntradayRisultato, PrezzoCorrente, PuntoIntraday
 _RISOLUZIONI_VALIDE = {"1MN", "5MN", "15MN", "30MN", "1H"}
 
 # URL base API intraday
-_URL_INTRADAY = (
-    "https://grafici.borsaitaliana.it/api/instruments/"
-    "{isin},XMIL,ISIN/intraday"
-)
+_URL_INTRADAY = "https://grafici.borsaitaliana.it/api/instruments/{isin},XMIL,ISIN/intraday"
 
 # URL base API storico (per prezzo corrente via ultimo punto)
-_URL_STORICO = (
-    "https://grafici.borsaitaliana.it/api/instruments/"
-    "{isin},XMIL,ISIN/history/period"
-)
+_URL_STORICO = "https://grafici.borsaitaliana.it/api/instruments/{isin},XMIL,ISIN/history/period"
 
 
 def _dec(valore: float | int | None) -> Decimal:
@@ -70,9 +64,7 @@ def ottieni_intraday(
     """
     risoluzione = risoluzione.upper()
     if risoluzione not in _RISOLUZIONI_VALIDE:
-        raise ValueError(
-            f"Risoluzione '{risoluzione}' non valida. Usa: {', '.join(sorted(_RISOLUZIONI_VALIDE))}"
-        )
+        raise ValueError(f"Risoluzione '{risoluzione}' non valida. Usa: {', '.join(sorted(_RISOLUZIONI_VALIDE))}")
 
     isin = isin.strip().upper()
 
@@ -86,9 +78,7 @@ def ottieni_intraday(
 
         punti_raw = dati.get("intradayPoint", [])
         if not punti_raw:
-            raise DatiNonDisponibili(
-                f"Nessun dato intraday per '{isin}' (mercato chiuso?)"
-            )
+            raise DatiNonDisponibili(f"Nessun dato intraday per '{isin}' (mercato chiuso?)")
 
         punti = [_parsa_punto_intraday(p) for p in punti_raw]
         return IntradayRisultato(isin=isin, punti=punti)

@@ -23,10 +23,7 @@ _USER_AGENT = (
 )
 
 # URL per estrarre il JWT token (il token è uguale per qualsiasi ISIN)
-_URL_CHART_TOKEN = (
-    "https://grafici.borsaitaliana.it/interactive-chart/"
-    "IT0003128367-XMIL?lang=it"
-)
+_URL_CHART_TOKEN = "https://grafici.borsaitaliana.it/interactive-chart/IT0003128367-XMIL?lang=it"
 
 # Regex per estrarre il token dalla pagina
 _RE_TOKEN = re.compile(r'token="([^"]+)"')
@@ -96,17 +93,14 @@ class Sessione:
                 self._token = match.group(1)
             else:
                 raise ErroreConnessione(
-                    "Impossibile estrarre il JWT token dalla pagina "
-                    "interactive-chart di Borsa Italiana"
+                    "Impossibile estrarre il JWT token dalla pagina interactive-chart di Borsa Italiana"
                 )
 
             self._warmup_eseguito = True
         except ErroreConnessione:
             raise
         except httpx.HTTPError as err:
-            raise ErroreConnessione(
-                f"Errore durante il warmup: {err}"
-            ) from err
+            raise ErroreConnessione(f"Errore durante il warmup: {err}") from err
 
     def _assicura_warmup(self) -> None:
         """Se il warmup non è stato ancora eseguito, lo fa ora."""
@@ -153,17 +147,13 @@ class Sessione:
                 self._ultimo_accesso = time.monotonic()
 
                 if risposta.status_code == 429:
-                    attesa = 2 ** tentativo
+                    attesa = 2**tentativo
                     time.sleep(attesa)
-                    ultimo_errore = RateLimitRaggiunto(
-                        f"HTTP 429 — tentativo {tentativo}/{self._max_tentativi}"
-                    )
+                    ultimo_errore = RateLimitRaggiunto(f"HTTP 429 — tentativo {tentativo}/{self._max_tentativi}")
                     continue
 
                 if risposta.status_code == 403:
-                    raise RateLimitRaggiunto(
-                        f"HTTP 403 — accesso bloccato dal WAF (url={url})"
-                    )
+                    raise RateLimitRaggiunto(f"HTTP 403 — accesso bloccato dal WAF (url={url})")
 
                 risposta.raise_for_status()
                 return risposta
@@ -171,17 +161,11 @@ class Sessione:
             except RateLimitRaggiunto:
                 raise
             except httpx.TimeoutException as err:
-                ultimo_errore = ErroreConnessione(
-                    f"Timeout alla richiesta {url}: {err}"
-                )
+                ultimo_errore = ErroreConnessione(f"Timeout alla richiesta {url}: {err}")
             except httpx.HTTPStatusError as err:
-                ultimo_errore = ErroreConnessione(
-                    f"HTTP {err.response.status_code} per {url}: {err}"
-                )
+                ultimo_errore = ErroreConnessione(f"HTTP {err.response.status_code} per {url}: {err}")
             except httpx.HTTPError as err:
-                ultimo_errore = ErroreConnessione(
-                    f"Errore di rete per {url}: {err}"
-                )
+                ultimo_errore = ErroreConnessione(f"Errore di rete per {url}: {err}")
 
         # Tutti i tentativi esauriti
         raise ultimo_errore  # type: ignore[misc]
@@ -192,18 +176,14 @@ class Sessione:
         try:
             return risposta.json()
         except Exception as err:
-            raise ErroreConnessione(
-                f"Risposta non JSON da {url}: {risposta.text[:200]}"
-            ) from err
+            raise ErroreConnessione(f"Risposta non JSON da {url}: {risposta.text[:200]}") from err
 
     def get_html(self, url: str, params: dict | None = None) -> BeautifulSoup:
         """Esegue una GET e restituisce il DOM parsato con lxml."""
         risposta = self._esegui_get(url, params=params)
         return BeautifulSoup(risposta.text, "lxml")
 
-    def get_html_con_url(
-        self, url: str, params: dict | None = None
-    ) -> tuple[BeautifulSoup, str]:
+    def get_html_con_url(self, url: str, params: dict | None = None) -> tuple[BeautifulSoup, str]:
         """Esegue una GET e restituisce (DOM, URL finale dopo redirect)."""
         risposta = self._esegui_get(url, params=params)
         return BeautifulSoup(risposta.text, "lxml"), str(risposta.url)
@@ -222,9 +202,7 @@ class Sessione:
         try:
             return risposta.json()
         except Exception as err:
-            raise ErroreConnessione(
-                f"Risposta non JSON (XHR) da {url}: {risposta.text[:200]}"
-            ) from err
+            raise ErroreConnessione(f"Risposta non JSON (XHR) da {url}: {risposta.text[:200]}") from err
 
     # ------------------------------------------------------------------
     # Chiusura

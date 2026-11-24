@@ -15,9 +15,7 @@ from .sessione import Sessione
 from .tipi import StrumentoLista
 
 # URL lista BTP
-_URL_LISTA_BTP = (
-    "https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/lista.html"
-)
+_URL_LISTA_BTP = "https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/lista.html"
 
 # The list is split into pages of 20 rows (?page=N): 12 pages in November 2026.
 _MAX_PAGINE_LISTA = 50
@@ -61,7 +59,7 @@ def _estrai_isin_da_link(cella: BeautifulSoup) -> str | None:
     (es. "OBBLIGAZIONI" che ha 12 lettere maiuscole).
     """
     # Pattern ISIN: esattamente 2 lettere + 10 tra cui almeno 1 cifra, con word boundary
-    isin_re = re.compile(r'\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b')
+    isin_re = re.compile(r"\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b")
 
     link = cella.find("a")
     if link:
@@ -130,7 +128,7 @@ def _estrai_strumenti(tabella: BeautifulSoup, lingua: str) -> list[StrumentoList
         elif "expiry" in h or "scadenza" in h or "maturity" in h:
             idx_scadenza = i
 
-    for riga in righe[header_idx + 1:]:
+    for riga in righe[header_idx + 1 :]:
         celle = riga.find_all("td")
         if not celle:
             continue
@@ -259,8 +257,7 @@ def lista_btp(
                 # Past the last page the site still returns the (empty) table:
                 # a page without any table is a WAF/challenge page.
                 raise DatiNonDisponibili(
-                    f"Tabella BTP non trovata a pagina {pagina}: probabile blocco del WAF, "
-                    "la lista sarebbe incompleta"
+                    f"Tabella BTP non trovata a pagina {pagina}: probabile blocco del WAF, la lista sarebbe incompleta"
                 )
             if pagina == 1 and len(tabella.find_all("tr")) < 2:
                 raise DatiNonDisponibili("La tabella BTP è vuota")

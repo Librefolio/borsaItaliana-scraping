@@ -13,9 +13,6 @@ try:
     print()
     print("Ultimi 5 giorni:")
     for p in risultato.punti[-5:]:
-        print(
-            f"  {p.data}: O={p.apertura} H={p.massimo} "
-            f"L={p.minimo} C={p.chiusura} V={p.volume}"
-        )
+        print(f"  {p.data}: O={p.apertura} H={p.massimo} L={p.minimo} C={p.chiusura} V={p.volume}")
 finally:
     sessione.chiudi()
