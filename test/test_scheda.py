@@ -5,8 +5,16 @@ from decimal import Decimal
 
 import pytest
 
-from borsa_italiana_scraping import ottieni_scheda, Sessione
-from borsa_italiana_scraping.tipi import SchedaStrumento
+from borsa_italiana_scraping import ottieni_scheda, ottieni_profilo_societa, Sessione
+from borsa_italiana_scraping.tipi import (
+    SchedaStrumento,
+    ProfiloSocieta,
+    Azionista,
+    Dirigente,
+    DatoSocietario,
+    IndirizzoSocieta,
+    ContattiSocieta,
+)
 
 ISIN_ENEL = "IT0003128367"
 ISIN_BTP = "IT0005634800"
@@ -121,6 +129,89 @@ class TestSchedaAzione:
         assert scheda.performance_1m is not None
         assert scheda.performance_6m is not None
         assert scheda.performance_1y is not None
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("lingua", ["it", "en"])
+class TestProfiloSocieta:
+    """Test di integrazione per il Profilo Società ENEL."""
+
+    def test_profilo_base(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert isinstance(profilo, ProfiloSocieta)
+        assert profilo.isin == ISIN_ENEL
+
+    def test_descrizione(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert profilo.descrizione is not None
+        assert len(profilo.descrizione) > 20
+
+    def test_dirigenti(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert isinstance(profilo.dirigenti, list)
+
+        for dirigente in profilo.dirigenti:
+            assert isinstance(dirigente, Dirigente)
+            assert dirigente.ruolo
+            assert dirigente.nominativo
+
+    def test_dati_societari(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert isinstance(profilo.dati_principali, list)
+        assert isinstance(profilo.anni_disponibili, list)
+        assert all(isinstance(a, int) for a in profilo.anni_disponibili)
+        assert profilo.anni_disponibili == sorted(profilo.anni_disponibili, reverse=True)
+
+        for dato in profilo.dati_principali:
+            assert isinstance(dato, DatoSocietario)
+            assert dato.voce
+            assert isinstance(dato.valori, dict)
+
+    def test_azionisti(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert isinstance(profilo.azionisti, list)
+        assert len(profilo.azionisti) > 0
+
+        for azionista in profilo.azionisti:
+            assert isinstance(azionista, Azionista)
+            assert azionista.nominativo
+            assert azionista.percentuale is not None
+            assert Decimal("0") <= azionista.percentuale <= Decimal("100")
+
+    def test_indirizzo(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert profilo.indirizzo is not None
+        assert isinstance(profilo.indirizzo, IndirizzoSocieta)
+        assert any((
+            profilo.indirizzo.ragione_sociale,
+            profilo.indirizzo.via,
+            profilo.indirizzo.cap,
+            profilo.indirizzo.comune,
+            profilo.indirizzo.paese,
+        ))
+
+    def test_contatti(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+        assert isinstance(profilo.contatti, ContattiSocieta)
+        assert any((profilo.contatti.telefono,profilo.contatti.sito_web))
+
+    def test_metadati(self, sessione: Sessione, lingua: str) -> None:
+        profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)
+
+        if profilo.fonte is not None:
+            assert profilo.fonte.strip()
+
+        if profilo.ultimo_aggiornamento is not None:
+            assert isinstance(profilo.ultimo_aggiornamento, date)
+
+
+def test_profilo_societa_lingua_default(sessione: Sessione) -> None:
+    """La lingua predefinita deve essere inglese."""
+    profilo = ottieni_profilo_societa(ISIN_ENEL, sessione=sessione)
+
+    assert isinstance(profilo, ProfiloSocieta)
+    assert profilo.isin == ISIN_ENEL
+    assert profilo.descrizione is not None
 
 
 ISIN_ETC_ORO = "IE00B579F325"  # Invesco Physical Gold ETC: denominazione USD, negoziazione EUR
