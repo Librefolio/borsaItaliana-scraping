@@ -30,7 +30,7 @@ _URL_LISTA_GREEN_SOCIAL = ("https://www.borsaitaliana.it/borsa/obbligazioni/gree
 _PAUSA_TRA_PAGINE = 1.0
 
 # The list is split into pages of 20 rows (?page=N): 12 pages in November 2026.
-_MAX_PAGINE_LISTA = 50
+_MAX_PAGINE_LISTA = 200
 
 T = TypeVar("T")
 
@@ -358,7 +358,11 @@ def _scarica_lista(
 
             # Raggiunto il numero massimo di pagine richiesto.
             if pagina >= max_pagine:
-                break
+                if pagina_successiva is not False:
+                    raise DatiNonDisponibili(
+                        f"Limite di {max_pagine} pagine raggiunto per {nome_lista}, "
+                        "ma potrebbero esserci altre pagine: la lista potrebbe essere incompleta"
+                    )
 
             pagina += 1
 
