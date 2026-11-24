@@ -5,10 +5,8 @@ class BorsaItalianaErrore(Exception):
     """Errore base della libreria."""
 
 
-
 class StrumentoNonTrovato(BorsaItalianaErrore):
     """Lo strumento con l'ISIN specificato non è stato trovato."""
-
 
 
 class StrumentoNonRisolto(StrumentoNonTrovato):
@@ -21,22 +19,17 @@ class StrumentoNonRisolto(StrumentoNonTrovato):
     """
 
 
-
 class DatiNonDisponibili(BorsaItalianaErrore):
     """I dati richiesti non sono disponibili (periodo non supportato, mercato chiuso, ecc.)."""
-
 
 
 class ErroreConnessione(BorsaItalianaErrore):
     """Errore di rete o timeout."""
 
 
-
 class RateLimitRaggiunto(BorsaItalianaErrore):
     """Troppe richieste — il WAF ha bloccato la connessione."""
 
 
-
 class RicercaNonDisponibile(BorsaItalianaErrore):
     """La ricerca JSON non è disponibile (Cloudflare block). Suggerisce di usare lista_btp() ecc."""
-
