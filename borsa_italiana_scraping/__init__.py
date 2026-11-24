@@ -73,8 +73,8 @@ __all__ = [
     "SchedaStrumento",
     "StoricoRisultato",
     "StrumentoLista",
-    "DatiFondo",
     "StrumentoGreenSocial",
+    "DatiFondo",
     # Funzioni
     "ottieni_storico",
     "ottieni_intraday",
