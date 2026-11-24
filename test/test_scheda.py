@@ -5,15 +5,15 @@ from decimal import Decimal
 
 import pytest
 
-from borsa_italiana_scraping import ottieni_scheda, ottieni_profilo_societa, Sessione
+from borsa_italiana_scraping import Sessione, ottieni_profilo_societa, ottieni_scheda
 from borsa_italiana_scraping.tipi import (
-    SchedaStrumento,
-    ProfiloSocieta,
     Azionista,
-    Dirigente,
-    DatoSocietario,
-    IndirizzoSocieta,
     ContattiSocieta,
+    DatoSocietario,
+    Dirigente,
+    IndirizzoSocieta,
+    ProfiloSocieta,
+    SchedaStrumento,
 )
 
 ISIN_ENEL = "IT0003128367"
@@ -176,7 +176,7 @@ class TestProfiloSocieta:
             assert isinstance(azionista, Azionista)
             assert azionista.nominativo
             assert azionista.percentuale is not None
-            assert Decimal("0") <= azionista.percentuale <= Decimal("100")
+            assert Decimal(0) <= azionista.percentuale <= Decimal(100)
 
     def test_indirizzo(self, sessione: Sessione, lingua: str) -> None:
         profilo = ottieni_profilo_societa(ISIN_ENEL, lingua=lingua, sessione=sessione)

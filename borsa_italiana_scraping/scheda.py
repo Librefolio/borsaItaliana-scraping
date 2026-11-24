@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+
 from bs4 import BeautifulSoup, Tag
 
 from .eccezioni import DatiNonDisponibili, StrumentoNonRisolto, StrumentoNonTrovato
@@ -18,7 +19,6 @@ from .tipi import (
     ProfiloSocieta,
     SchedaStrumento,
 )
-
 
 # URL universale (segue redirect)
 _URL_SCHEDA = "https://www.borsaitaliana.it/borsa/search/scheda.html"
@@ -174,11 +174,10 @@ def _trova_valore(soup: BeautifulSoup, etichette: list[str], esatta: bool = Fals
                 if parent_tr:
                     tds = parent_tr.find_all("td")
                     for i, td in enumerate(tds):
-                        if corrisponde(_pulisci_testo(td.get_text())):
-                            if i + 1 < len(tds):
-                                val = _pulisci_testo(tds[i + 1].get_text())
-                                if val and val != "-":
-                                    return val
+                        if corrisponde(_pulisci_testo(td.get_text())) and i + 1 < len(tds):
+                            val = _pulisci_testo(tds[i + 1].get_text())
+                            if val and val != "-":
+                                return val
 
     return None
 
@@ -187,7 +186,7 @@ def _trova_prezzo_principale(soup: BeautifulSoup, lingua: str) -> Decimal | None
     """Estrae il prezzo principale dalla pagina (grande, in evidenza)."""
     # Cerca il container summary-value (contiene prezzo + variazione %)
     for classe in ("summary-value", "t-text -black-c", "last-price"):
-        tag = soup.find(class_=re.compile(classe, re.I))
+        tag = soup.find(class_=re.compile(classe, re.IGNORECASE))
         if tag:
             # Se il tag ha figli <span>, il prezzo è nel primo (il secondo è la variazione %)
             figli_span = tag.find_all("span")
@@ -423,7 +422,7 @@ def ottieni_scheda(
                 prezzo = _trova_prezzo_principale(soup_dc, lingua)
                 # Estrai dati aggiuntivi dalla pagina dati-completi
                 soup = soup_dc
-            except Exception:
+            except Exception:  # noqa: BLE001, S110 - best-effort fallback, the error below is explicit
                 pass
 
         if prezzo is None:
@@ -487,7 +486,7 @@ def ottieni_scheda(
                 if soup_dc is None:
                     try:
                         soup_dc = _scarica_dati_completi(isin, tipo, lingua, sessione, mic, url_finale=url_finale)
-                    except Exception:
+                    except Exception:  # noqa: BLE001 - optional integration, missing fields stay None
                         soup_dc = None
                 if soup_dc is not None:
                     _integra_obbligazione_da_dati_completi(scheda, soup_dc, lingua)
@@ -1179,7 +1178,7 @@ def _estrai_indirizzo_e_contatti(
             # Telefono dal link tel:
             link_tel = contenitore.find(
                 "a",
-                href=re.compile(r"^tel:", re.I)
+                href=re.compile(r"^tel:", re.IGNORECASE)
             )
 
             if link_tel is not None:
@@ -1199,7 +1198,7 @@ def _estrai_indirizzo_e_contatti(
                     r"^https?://",
                     "",
                     href,
-                    flags=re.I,
+                    flags=re.IGNORECASE,
                 ).split("/")[0].lower()
 
                 if dominio not in {
@@ -1230,15 +1229,15 @@ def _estrai_indirizzo_e_contatti(
                 if re.match(
                     r"^(numero di telefono|telefono|phone|tel)\s*:",
                     riga,
-                    re.I,
+                    re.IGNORECASE,
                 ):
                     continue
 
-                if re.match(r"^https?://", riga, re.I):
+                if re.match(r"^https?://", riga, re.IGNORECASE):
                     continue
 
                 # Source / last-update note under the address block.
-                if re.match(r"^(fonte|source)\s*:", riga, re.I):
+                if re.match(r"^(fonte|source)\s*:", riga, re.IGNORECASE):
                     continue
 
                 if riga == (link_tel.get_text(" ", strip=True) if link_tel else None):
@@ -1252,7 +1251,7 @@ def _estrai_indirizzo_e_contatti(
                 match = re.search(
                     r"\b(?:[A-Z]{2}[- ]?)?(\d{5})\b",
                     riga,
-                    re.I,
+                    re.IGNORECASE,
                 )
 
                 if match:
@@ -1302,7 +1301,7 @@ def _estrai_indirizzo_e_contatti(
 
         contenitore = articolo_contatti.find("div",class_=lambda c: c and "h-bg--white" in c)
         if contenitore is not None:
-            link_email = contenitore.find("a",href=re.compile(r"^mailto:", re.I))
+            link_email = contenitore.find("a",href=re.compile(r"^mailto:", re.IGNORECASE))
             if link_email is not None:
                 email = str(link_email.get("href", "")).removeprefix("mailto:").strip()
 
@@ -1431,7 +1430,7 @@ def _estrai_tabelle_profilo(
 
         valore = _parsa_numero(ultimo, lingua)
 
-        return valore is not None and Decimal("0") <= valore <= Decimal("100")
+        return valore is not None and Decimal(0) <= valore <= Decimal(100)
 
     for tabella in soup.find_all("table"):
         righe = _righe_tabella(tabella)
@@ -1536,7 +1535,7 @@ def _estrai_tabelle_profilo(
                 if not nome or percentuale is None:
                     continue
 
-                if not Decimal("0") <= percentuale <= Decimal("100"):
+                if not Decimal(0) <= percentuale <= Decimal(100):
                     continue
 
                 azionisti.append(Azionista(nome,percentuale))

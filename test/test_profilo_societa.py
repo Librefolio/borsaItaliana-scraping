@@ -61,23 +61,23 @@ def _profilo(lingua: str) -> ProfiloSocieta:
 # Same figures on both pages; only the labels change with the language.
 _ANNI = [2025, 2024, 2023, 2022, 2021]
 _FATTURATO = {
-    2021: Decimal("81900"),
-    2022: Decimal("135653"),
-    2023: Decimal("92882"),
-    2024: Decimal("73914"),
-    2025: Decimal("78057"),
+    2021: Decimal(81900),
+    2022: Decimal(135653),
+    2023: Decimal(92882),
+    2024: Decimal(73914),
+    2025: Decimal(78057),
 }
 _UTILE_NETTO = {
-    2021: Decimal("3857"),
-    2022: Decimal("2920"),
-    2023: Decimal("4267"),
-    2024: Decimal("8229"),
-    2025: Decimal("5617"),
+    2021: Decimal(3857),
+    2022: Decimal(2920),
+    2023: Decimal(4267),
+    2024: Decimal(8229),
+    2025: Decimal(5617),
 }
 _ATTIVITA_DISMESSE = {
-    2021: Decimal("0"),
-    2022: Decimal("-2234"),
-    2023: Decimal("-371"),
+    2021: Decimal(0),
+    2022: Decimal(-2234),
+    2023: Decimal(-371),
     2024: None,
     2025: None,
 }
@@ -167,7 +167,7 @@ class TestProfiloSocietaOffline:
         assert azionisti[0] == _PER_LINGUA[lingua]["primo_azionista"]
         assert azionisti[-1].nominativo == _PER_LINGUA[lingua]["ultimo_azionista"]
         assert [a.percentuale for a in azionisti] == _PERCENTUALI_AZIONISTI
-        assert sum(a.percentuale for a in azionisti) == Decimal("100")
+        assert sum(a.percentuale for a in azionisti) == Decimal(100)
 
     def test_indirizzo(self, lingua: str) -> None:
         indirizzo = _profilo(lingua).indirizzo
