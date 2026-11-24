@@ -126,10 +126,9 @@ def test_si_ferma_se_una_pagina_ripete_la_precedente() -> None:
 def test_limite_massimo_di_pagine() -> None:
     s = FakeSessione({1: _pagina(1), 2: _pagina(2)})
 
-    risultati = lista_btp(lingua="en", sessione=s, max_pagine=1)
+    with pytest.raises(DatiNonDisponibili, match="Limite di 1 pagine raggiunto",):
+        lista_btp(lingua="en", sessione=s, pausa_tra_pagine=0, max_pagine=1)
 
-    assert [r.isin for r in risultati] == _ISIN_P1
-    assert len(s.richieste) == 1
 
 
 def test_pausa_configurabile(niente_pause: list[float]) -> None:
