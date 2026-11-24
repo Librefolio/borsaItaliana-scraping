@@ -19,8 +19,14 @@ from .eccezioni import (
 
 # Tipi di dati
 from .tipi import (
+    Azionista,
+    ContattiSocieta,
+    DatoSocietario,
+    Dirigente,
+    IndirizzoSocieta,
     IntradayRisultato,
     PrezzoCorrente,
+    ProfiloSocieta,
     PuntoIntraday,
     PuntoStorico,
     RisultatoRicerca,
@@ -56,8 +62,14 @@ __all__ = [
     "StrumentoNonRisolto",
     "StrumentoNonTrovato",
     # Tipi
+    "Azionista",
+    "ContattiSocieta",
+    "DatoSocietario",
+    "Dirigente",
+    "IndirizzoSocieta",
     "IntradayRisultato",
     "PrezzoCorrente",
+    "ProfiloSocieta",
     "PuntoIntraday",
     "PuntoStorico",
     "RisultatoRicerca",
