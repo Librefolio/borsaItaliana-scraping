@@ -1,6 +1,6 @@
 """Esempio: storico + metadati del BTP Più (IT0005634800)."""
 
-from borsa_italiana_scraping import ottieni_storico, ottieni_scheda, Sessione
+from borsa_italiana_scraping import Sessione, ottieni_scheda, ottieni_storico
 
 sessione = Sessione()
 

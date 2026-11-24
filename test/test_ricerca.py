@@ -2,7 +2,7 @@
 
 import pytest
 
-from borsa_italiana_scraping import cerca, Sessione
+from borsa_italiana_scraping import Sessione, cerca
 from borsa_italiana_scraping.tipi import RisultatoRicerca
 
 

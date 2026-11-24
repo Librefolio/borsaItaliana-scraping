@@ -1,13 +1,13 @@
 """Esempio end-to-end: storico, intraday, prezzo corrente, scheda, lista."""
 
 from borsa_italiana_scraping import (
+    DatiNonDisponibili,
     Sessione,
-    ottieni_storico,
+    lista_btp,
     ottieni_intraday,
     ottieni_prezzo_corrente,
     ottieni_scheda,
-    lista_btp,
-    DatiNonDisponibili,
+    ottieni_storico,
 )
 
 ISIN_ENEL = "IT0003128367"

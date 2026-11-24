@@ -3,10 +3,6 @@
 Esporta tutte le funzioni e i tipi dell'API pubblica.
 """
 
-# Sessione HTTP
-from .sessione import Sessione
-
-# Eccezioni
 from .eccezioni import (
     BorsaItalianaErrore,
     DatiNonDisponibili,
@@ -16,8 +12,18 @@ from .eccezioni import (
     StrumentoNonRisolto,
     StrumentoNonTrovato,
 )
-
-# Tipi di dati
+from .fondi import (
+    DatiFondo,
+    estrai_codice_da_url,
+    ottieni_dati_fondo,
+    ottieni_dati_fondo_da_url,
+)
+from .lista import lista_btp
+from .ricerca import cerca
+from .scheda import ottieni_profilo_societa, ottieni_scheda
+from .sessione import Sessione
+from .storico import ottieni_storico
+from .tempo_reale import ottieni_intraday, ottieni_prezzo_corrente
 from .tipi import (
     Azionista,
     ContattiSocieta,
@@ -35,57 +41,40 @@ from .tipi import (
     StrumentoLista,
 )
 
-# Funzioni
-from .storico import ottieni_storico
-from .tempo_reale import ottieni_intraday, ottieni_prezzo_corrente
-from .ricerca import cerca
-from .scheda import ottieni_scheda, ottieni_profilo_societa
-from .fondi import (
-    DatiFondo,
-    estrai_codice_da_url,
-    ottieni_dati_fondo,
-    ottieni_dati_fondo_da_url,
-)
-from .lista import lista_btp
-
 __version__ = "0.3.5"
 
 __all__ = [
-    # Sessione
-    "Sessione",
-    # Eccezioni
-    "BorsaItalianaErrore",
-    "DatiNonDisponibili",
-    "ErroreConnessione",
-    "RateLimitRaggiunto",
-    "RicercaNonDisponibile",
-    "StrumentoNonRisolto",
-    "StrumentoNonTrovato",
-    # Tipi
     "Azionista",
+    "BorsaItalianaErrore",
     "ContattiSocieta",
+    "DatiFondo",
+    "DatiNonDisponibili",
     "DatoSocietario",
     "Dirigente",
+    "ErroreConnessione",
     "IndirizzoSocieta",
     "IntradayRisultato",
     "PrezzoCorrente",
     "ProfiloSocieta",
     "PuntoIntraday",
     "PuntoStorico",
+    "RateLimitRaggiunto",
+    "RicercaNonDisponibile",
     "RisultatoRicerca",
     "SchedaStrumento",
+    "Sessione",
     "StoricoRisultato",
     "StrumentoLista",
-    "DatiFondo",
-    # Funzioni
-    "ottieni_storico",
-    "ottieni_intraday",
-    "ottieni_prezzo_corrente",
+    "StrumentoNonRisolto",
+    "StrumentoNonTrovato",
     "cerca",
-    "ottieni_scheda",
-    "ottieni_profilo_societa",
-    "ottieni_dati_fondo",
-    "ottieni_dati_fondo_da_url",
     "estrai_codice_da_url",
     "lista_btp",
+    "ottieni_dati_fondo",
+    "ottieni_dati_fondo_da_url",
+    "ottieni_intraday",
+    "ottieni_prezzo_corrente",
+    "ottieni_profilo_societa",
+    "ottieni_scheda",
+    "ottieni_storico",
 ]

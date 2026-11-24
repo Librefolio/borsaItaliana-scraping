@@ -12,17 +12,18 @@ Puoi anche eseguire ogni sezione singolarmente dall'IDE selezionando
 il blocco e facendo "Run Selection".
 """
 
+from decimal import Decimal
+
 from borsa_italiana_scraping import (
+    DatiNonDisponibili,
     Sessione,
-    ottieni_storico,
+    cerca,
+    lista_btp,
     ottieni_intraday,
     ottieni_prezzo_corrente,
     ottieni_scheda,
-    lista_btp,
-    cerca,
-    DatiNonDisponibili,
+    ottieni_storico,
 )
-from decimal import Decimal
 
 ISIN_ENEL = "IT0003128367"
 ISIN_BTP_PIU = "IT0005634800"

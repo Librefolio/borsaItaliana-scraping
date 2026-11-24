@@ -1,6 +1,6 @@
 """Esempio: cerca 'BTP' e 'ENEL' su Borsa Italiana."""
 
-from borsa_italiana_scraping import cerca, RicercaNonDisponibile, Sessione
+from borsa_italiana_scraping import RicercaNonDisponibile, Sessione, cerca
 
 sessione = Sessione()
 

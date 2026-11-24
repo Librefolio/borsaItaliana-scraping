@@ -6,10 +6,10 @@ from decimal import Decimal
 import pytest
 
 from borsa_italiana_scraping import (
+    DatiNonDisponibili,
+    Sessione,
     ottieni_intraday,
     ottieni_prezzo_corrente,
-    Sessione,
-    DatiNonDisponibili,
 )
 from borsa_italiana_scraping.tipi import IntradayRisultato, PrezzoCorrente, PuntoIntraday
 

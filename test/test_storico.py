@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from borsa_italiana_scraping import ottieni_storico, Sessione, StrumentoNonTrovato
-from borsa_italiana_scraping.tipi import StoricoRisultato, PuntoStorico
+from borsa_italiana_scraping import Sessione, StrumentoNonTrovato, ottieni_storico
+from borsa_italiana_scraping.tipi import PuntoStorico, StoricoRisultato
 
 # ISIN di test
 ISIN_ENEL = "IT0003128367"

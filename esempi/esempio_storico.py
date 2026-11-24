@@ -1,6 +1,6 @@
 """Esempio: scarica lo storico di ENEL (IT0003128367) per 1 anno."""
 
-from borsa_italiana_scraping import ottieni_storico, Sessione
+from borsa_italiana_scraping import Sessione, ottieni_storico
 
 sessione = Sessione()
 
