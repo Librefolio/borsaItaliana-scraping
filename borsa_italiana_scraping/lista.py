@@ -242,6 +242,7 @@ def _estrai_green_social(
             StrumentoGreenSocial(
                 isin=isin,
                 nome=nome or isin,
+                mic = _estrai_mic_da_link(riga),
                 emittente=valore_colonna(idx_emittente),
                 tipologia_emissione=valore_colonna(idx_tipologia),
             )

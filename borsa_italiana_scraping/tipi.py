@@ -170,8 +170,8 @@ class StrumentoGreenSocial:
     informazioni descrittive (emittente e tipologia di emissione) e non
     necessariamente prezzo, cedola e scadenza.
     """
-
     isin: str
     nome: str
+    mic: str
     emittente: str | None = None
     tipologia_emissione: str | None = None
