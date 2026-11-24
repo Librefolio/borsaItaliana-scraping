@@ -11,7 +11,7 @@ Supporta **azioni**, **obbligazioni** (BTP, BOT, CCT, CTZ, corporate) e qualsias
 - 💰 **Prezzo corrente** — con fallback automatico API → scraping
 - 🔍 **Ricerca strumenti** — per nome, ISIN, ticker
 - 📋 **Scheda strumento** — metadati ricchi (rendimento, cedola, scadenza, settore…)
-- 📃 **Lista strumenti** — tutti i BTP quotati sul MOT
+- 📃 **Liste obbligazionarie** — BTP, Euro MOT, Domestic MOT, BOT, CCT, CTZ e Green & Social Bond
 - 🍪 **Gestione automatica WAF** — warmup cookie Imperva trasparente
 
 ## 📦 Installazione
@@ -93,6 +93,12 @@ for r in risultati[:5]:
 | `cerca(query, lingua, ...)` | Ricerca strumenti | `list[RisultatoRicerca]` |
 | `ottieni_scheda(isin, mic, lingua, ...)` | Metadati dalla pagina scheda | `SchedaStrumento` |
 | `lista_btp(lingua, ...)` | Lista completa BTP su MOT | `list[StrumentoLista]` |
+| `lista_euro_mot(lingua, ...)` | Lista obbligazioni Euro MOT | `list[StrumentoLista]` |
+| `lista_domestic_mot(lingua, ...)` | Lista obbligazioni Domestic MOT | `list[StrumentoLista]` |
+| `lista_bot(lingua, ...)` | Lista completa BOT su MOT | `list[StrumentoLista]` |
+| `lista_cct(lingua, ...)` | Lista completa CCT su MOT | `list[StrumentoLista]` |
+| `lista_ctz(lingua, ...)` | Lista completa CTZ su MOT | `list[StrumentoLista]` |
+| `lista_green_and_social(lingua, ...)` | Lista obbligazioni Green & Social | `list[StrumentoGreenSocial]` |
 
 ### Parametri comuni
 
@@ -126,6 +132,12 @@ Supporta il context manager (`with Sessione() as sess: ...`).
 | `cerca()` | JSON API (XHR) | `www.borsaitaliana.it/borsa/searchengine/search.html` |
 | `ottieni_scheda()` | Scraping HTML | Pagina scheda strumento |
 | `lista_btp()` | Scraping HTML | Pagina lista BTP |
+| `lista_bot()` | Scraping HTML | Pagina lista BOT su MOT |
+| `lista_domestic_mot()` | Scraping HTML | Pagina lista obbligazioni Domestic MOT |
+| `lista_euro_mot()` | Scraping HTML | Pagina lista obbligazioni Euro MOT |
+| `lista_ctz()` | Scraping HTML | Pagina lista CTZ su MOT |
+| `lista_cct()` | Scraping HTML | Pagina lista CCT su MOT |
+| `lista_green_and_social()` | Scraping HTML | Pagina lista obbligazioni Green & Social |
 
 ## ⚠️ Note tecniche
 
