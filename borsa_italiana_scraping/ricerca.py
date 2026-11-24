@@ -87,7 +87,7 @@ def _sonda_soft_block(sessione: Sessione, lingua: str) -> bool:
     """
     try:
         dati = sessione.get_json(_URL_RICERCA, params={"lang": lingua, "q": "ENEL"})
-    except Exception:
+    except Exception:  # noqa: BLE001 - probe failure means "not a soft-block", see docstring
         return False
     return all(not dati.get(k) for k in ("quotes", "news", "pages", "terms", "documents"))
 

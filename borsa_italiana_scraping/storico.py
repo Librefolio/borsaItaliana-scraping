@@ -104,7 +104,7 @@ def _mic_da_ricerca(isin: str, sessione: Sessione) -> list[str]:
 
     try:
         risultati = cerca(isin, sessione=sessione)
-    except Exception:
+    except Exception:  # noqa: BLE001 - the search is best-effort, no MIC found means no result
         return []
 
     mics: list[str] = []

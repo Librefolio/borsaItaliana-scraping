@@ -68,7 +68,7 @@ class TestStoricoAPI:
 
     def test_isin_inesistente(self, sessione: Sessione) -> None:
         """Un ISIN inventato deve sollevare un'eccezione."""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017 - the live site error type is not stable
             ottieni_storico("XX0000000000", periodo="1M", sessione=sessione)
 
     def test_sessione_temporanea(self) -> None:

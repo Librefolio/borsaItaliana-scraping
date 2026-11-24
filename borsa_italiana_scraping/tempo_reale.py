@@ -119,7 +119,7 @@ def ottieni_prezzo_corrente(
 
     try:
         return _prezzo_da_api(isin, sessione, exchange=exchange)
-    except Exception:
+    except Exception:  # noqa: BLE001 - any API failure falls back to scraping
         # Fallback: scraping pagina scheda
         return _prezzo_da_scraping(isin, sessione, mic=mic, platform=platform)
     finally:
