@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from borsa_italiana_scraping import Sessione, StrumentoNonTrovato, ottieni_storico
+from borsa_italiana_scraping import Sessione, ottieni_storico
 from borsa_italiana_scraping.tipi import PuntoStorico, StoricoRisultato
 
 # ISIN di test

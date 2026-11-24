@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from borsa_italiana_scraping import RicercaNonDisponibile, cerca
-from borsa_italiana_scraping import ricerca as ricerca_mod
 
 _VUOTO = {"news": [], "pages": [], "terms": [], "documents": [], "quotes": []}
 _ENEL_PIENO = {
