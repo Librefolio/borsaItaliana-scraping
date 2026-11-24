@@ -18,12 +18,12 @@ from .tipi import StrumentoLista, StrumentoGreenSocial
 
 
 # URL delle liste
-_URL_LISTA_BTP          = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/lista.html")
+_URL_LISTA_BTP = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/btp/lista.html")
 _URL_LISTA_DOMESTIC_MOT = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/obbligazioni-euro/lista.html")
-_URL_LISTA_EURO_MOT     = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/euro-obbligazioni/lista.html")
-_URL_LISTA_BOT          = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/bot/lista.html")
-_URL_LISTA_CTZ          = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/ctz/lista.html")
-_URL_LISTA_CCT          = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/cct/lista.html")
+_URL_LISTA_EURO_MOT = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/euro-obbligazioni/lista.html")
+_URL_LISTA_BOT = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/bot/lista.html")
+_URL_LISTA_CTZ = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/ctz/lista.html")
+_URL_LISTA_CCT = ("https://www.borsaitaliana.it/borsa/obbligazioni/mot/cct/lista.html")
 _URL_LISTA_GREEN_SOCIAL = ("https://www.borsaitaliana.it/borsa/obbligazioni/green-e-social-bond/lista.html")
 
 # Limiti comuni a tutte le liste.
