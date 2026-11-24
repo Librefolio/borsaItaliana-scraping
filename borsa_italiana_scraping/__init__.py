@@ -74,7 +74,7 @@ __all__ = [
     "StoricoRisultato",
     "StrumentoLista",
     "DatiFondo",
-    "StrumentoGreenSocial"
+    "StrumentoGreenSocial",
     # Funzioni
     "ottieni_storico",
     "ottieni_intraday",
