@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import time
+from typing import Self
 
 import httpx
 from bs4 import BeautifulSoup
@@ -63,7 +64,7 @@ class Sessione:
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> Sessione:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:
