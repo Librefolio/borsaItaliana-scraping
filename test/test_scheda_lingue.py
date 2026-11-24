@@ -56,7 +56,7 @@ _CAMPI_OBBLIGAZIONE = {
     "duration_modificata": Decimal("0.66"),
     "cedola_annua": Decimal("6.25"),
     "cedola_periodale": Decimal("6.25"),
-    "outstanding": Decimal("7131099000"),
+    "outstanding": Decimal(7131099000),
     "convenzione_giorni": "ACT/ACT (PERIODIC BASIS)",
     "prezzo_riferimento": Decimal("102.344"),
     "scadenza": date(2027, 7, 15),

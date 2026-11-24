@@ -21,10 +21,10 @@ def _parsa_data(dt_str: str) -> date:
     return datetime.strptime(dt_str, "%Y%m%d").date()
 
 
-def _dec(valore: float | int | None) -> Decimal:
+def _dec(valore: float | None) -> Decimal:
     """Converte un numero JSON in Decimal."""
     if valore is None:
-        return Decimal("0")
+        return Decimal(0)
     return Decimal(str(valore))
 
 

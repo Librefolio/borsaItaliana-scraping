@@ -19,10 +19,10 @@ _URL_INTRADAY = "https://grafici.borsaitaliana.it/api/instruments/{isin},XMIL,IS
 _URL_STORICO = "https://grafici.borsaitaliana.it/api/instruments/{isin},XMIL,ISIN/history/period"
 
 
-def _dec(valore: float | int | None) -> Decimal:
+def _dec(valore: float | None) -> Decimal:
     """Converte un numero JSON in Decimal."""
     if valore is None:
-        return Decimal("0")
+        return Decimal(0)
     return Decimal(str(valore))
 
 
