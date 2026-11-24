@@ -123,12 +123,17 @@ def test_si_ferma_se_una_pagina_ripete_la_precedente() -> None:
     assert len(s.richieste) == 2
 
 
-def test_limite_massimo_di_pagine() -> None:
+def test_limite_massimo_di_pagine_meno_pagine_richieste() -> None:
     s = FakeSessione({1: _pagina(1), 2: _pagina(2)})
-
     with pytest.raises(DatiNonDisponibili, match="Limite di 1 pagine raggiunto",):
         lista_btp(lingua="en", sessione=s, pausa_tra_pagine=0, max_pagine=1)
 
+
+def test_limite_massimo_di_pagine_piu_pagine_richieste() -> None:
+    s = FakeSessione({1: _pagina(1), 2: _pagina(2)})
+    risultati = lista_btp(lingua="en", sessione=s, max_pagine=3)
+    assert [r.isin for r in risultati] == _ISIN_P1 + _ISIN_P2
+    assert len(s.richieste) == 2
 
 
 def test_pausa_configurabile(niente_pause: list[float]) -> None:
@@ -156,8 +161,7 @@ def test_pagina_successiva_senza_tabella_non_restituisce_lista_incompleta() -> N
 
 @pytest.mark.parametrize(("lingua", "isin_atteso"),
                          [("en", "IT0005596637"),
-                          ("it", "IT0005580052")]
-                          )
+                          ("it", "IT0005580052")]                          )
 def test_lista_domestic_mot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_domestic_mot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
@@ -175,8 +179,7 @@ def test_lista_domestic_mot(lingua: str, isin_atteso: str) -> None:
 
 @pytest.mark.parametrize(("lingua", "isin_atteso"),
                          [("en", "AT0000383864"),
-                          ("it", "AT0000A04967")
-                          ],)
+                          ("it", "AT0000A04967")])
 def test_lista_euro_mot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_euro_mot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
@@ -193,7 +196,7 @@ def test_lista_euro_mot(lingua: str, isin_atteso: str) -> None:
 
 @pytest.mark.parametrize(("lingua", "isin_atteso"),
                          [("en", "IT0005695256"),
-                          ("it", "IT0005695256")],)
+                          ("it", "IT0005695256")])
 def test_lista_bot(lingua: str, isin_atteso: str) -> None:
     html = (_FIXTURES / f"lista_bot_{lingua}.html").read_text(encoding="utf-8")
     s = FakeSessione({1: BeautifulSoup(html, "lxml")})
